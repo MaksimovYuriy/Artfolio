@@ -19,12 +19,13 @@ jobs:
       
       - name: Delivery
         run: |
+          ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" "mkdir -p ~/Artfolio"
           scp compose.yml "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:~/Artfolio/compose.yml"
 
       - name: Deploy
         run: |
           ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" << 'EOF'
-            cd Artfolio
+            cd ~/Artfolio
             docker compose pull
             docker compose up -d
           EOF
