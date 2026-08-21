@@ -3,8 +3,8 @@ import type { ArtistProfile } from '../types/artist'
 // TEMPORARY CONTENT: this is the single place for all artist-facing copy and links.
 export const mockArtist: ArtistProfile = {
   brandName: 'Artfolio',
-  name: 'Анна Аветисян',
-  tagline: 'Живопись, в которой пространство говорит тише слов. (Фурри)',
+  name: 'Художник всея Руси',
+  tagline: 'Живопись, в которой пространство говорит тише слов.',
   biography:
     'Здесь появится краткая биография художницы: образование, творческий путь и важные этапы практики.',
   artistStatement:
