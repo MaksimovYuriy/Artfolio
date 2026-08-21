@@ -1,8 +1,6 @@
-name: Frontend build
+name: Deploy to VPS
 
 on:
-  push:
-  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -10,6 +8,7 @@ permissions:
 
 jobs:
   build:
+    name: Check frontend build
     runs-on: ubuntu-latest
 
     defaults:
@@ -35,7 +34,6 @@ jobs:
 
   deploy:
     name: Deploy to VPS
-    if: github.event_name == 'workflow_dispatch'
     needs: build
     runs-on: ubuntu-latest
     environment: production
