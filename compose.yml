@@ -16,3 +16,31 @@ services:
     restart: unless-stopped
     mem_limit: 128m
     cpus: 0.25
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:18-trixie
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}",
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+    shm_size: 128mb
+    mem_limit: 128m
+    cpus: 0.25
+
+volumes:
+  postgres_data:

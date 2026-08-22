@@ -8,6 +8,7 @@ import (
 
 type Config struct {
 	HTTP HTTPConfig `env-prefix:"HTTP_"`
+	DB   DBConfig   `env-prefix:"DB_"`
 	App  AppConfig  `env-prefix:"APP_"`
 }
 
@@ -18,6 +19,15 @@ type HTTPConfig struct {
 	WriteTimeout      time.Duration `env:"WRITE_TIMEOUT" env-default:"10s"`
 	ReadHeaderTimeout time.Duration `env:"READ_HEADER_TIMEOUT" env-default:"5s"`
 	IdleTimeout       time.Duration `env:"IDLE_TIMEOUT" env-default:"60s"`
+}
+
+type DBConfig struct {
+	Host     string `env:"HOST" env-default:"localhost"`
+	Port     string `env:"PORT" env-default:"5432"`
+	User     string `env:"USER" env-default:"artfolio"`
+	Password string `env:"PASSWORD"`
+	Name     string `env:"NAME" env-default:"artfolio"`
+	SSLMode  string `env:"SSL_MODE" env-default:"disable"`
 }
 
 type AppConfig struct {

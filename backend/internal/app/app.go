@@ -11,6 +11,7 @@ import (
 	"github.com/maksimovyuriy/artfolio/backend/internal/config"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi"
 	"github.com/maksimovyuriy/artfolio/backend/internal/lib/logger"
+	"github.com/maksimovyuriy/artfolio/backend/internal/storage/postgres"
 )
 
 func Run() error {
@@ -25,7 +26,12 @@ func Run() error {
 	log := logger.New(appCfg.App.Env)
 	log.Info("Logger started")
 
-	// База данных
+	database, err := postgres.New(appCfg.DB)
+	if err != nil {
+		return err
+	}
+	defer database.Close()
+	log.Info("Database started")
 
 	// Зависимости
 
