@@ -6,3 +6,13 @@ services:
     restart: unless-stopped
     mem_limit: 128m
     cpus: 0.25
+    depends_on:
+      - backend
+  
+  backend:
+    image: ghcr.io/maksimovyuriy/artfolio-backend:latest
+    env_file:
+      - .env
+    restart: unless-stopped
+    mem_limit: 128m
+    cpus: 0.25
