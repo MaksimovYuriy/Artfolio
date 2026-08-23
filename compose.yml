@@ -17,6 +17,16 @@ services:
     mem_limit: 128m
     cpus: 0.25
     depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  migrate:
+    image: ghcr.io/maksimovyuriy/artfolio-backend:latest
+    command: ["./artfolio-migrate"]
+    env_file:
+      - .env
+    restart: "no"
+    depends_on:
       postgres:
         condition: service_healthy
 

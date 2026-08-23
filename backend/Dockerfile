@@ -6,11 +6,14 @@ RUN go mod download
 
 COPY . .
 RUN go build -o /app/bin/artfolio-api ./cmd/api
+RUN go build -o /app/bin/artfolio-migrate ./cmd/migrate
 
 FROM debian:trixie-slim
 WORKDIR /app
 
 COPY --from=build /app/bin/artfolio-api ./artfolio-api
+COPY --from=build /app/bin/artfolio-migrate ./artfolio-migrate
+COPY --from=build /app/migrations ./migrations
 
 EXPOSE 8081
 CMD ["./artfolio-api"]
