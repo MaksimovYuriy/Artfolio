@@ -23,6 +23,7 @@ import {
   revokeAdminSession,
   verifyAdminSession,
 } from '../../services/adminService'
+import { AdminProfile } from '../AdminProfile/AdminProfile'
 
 type AuthStatus = 'checking' | 'anonymous' | 'authenticated'
 
@@ -90,13 +91,20 @@ export function AdminLogin() {
     }
   }
 
+  function handleSessionExpired(message: string) {
+    setError(message)
+    setAuthStatus('anonymous')
+  }
+
   return (
     <Box component="main" sx={{ minHeight: '100dvh', display: 'flex' }}>
       <Container disableGutters sx={{ display: 'flex', flex: 1, maxWidth: 'none !important' }}>
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: 'minmax(360px, 47%) minmax(0, 53%)' },
+            gridTemplateColumns: authStatus === 'authenticated'
+              ? '1fr'
+              : { xs: '1fr', md: 'minmax(360px, 47%) minmax(0, 53%)' },
             flex: 1,
           }}
         >
@@ -107,11 +115,11 @@ export function AdminLogin() {
               py: { xs: 4, md: 6 },
               bgcolor: 'primary.main',
               color: '#f7f4ee',
-              display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
               position: 'relative',
               overflow: 'hidden',
+              display: authStatus === 'authenticated' ? 'none' : 'flex',
             }}
           >
             <Typography
@@ -170,11 +178,11 @@ export function AdminLogin() {
               py: { xs: 7, md: 8 },
               display: 'flex',
               flexDirection: 'column',
-              justifyContent: 'center',
+              justifyContent: authStatus === 'authenticated' ? 'flex-start' : 'center',
               bgcolor: 'background.default',
             }}
           >
-            <Box sx={{ width: '100%', maxWidth: 520, mx: 'auto' }}>
+            <Box sx={{ width: '100%', maxWidth: authStatus === 'authenticated' ? 1080 : 520, mx: 'auto' }}>
               <Link
                 href="/"
                 color="text.secondary"
@@ -194,41 +202,11 @@ export function AdminLogin() {
                   </Typography>
                 </Stack>
               ) : authStatus === 'authenticated' ? (
-                <Stack sx={{ alignItems: 'flex-start' }}>
-                  <Box
-                    sx={{
-                      width: 52,
-                      height: 52,
-                      display: 'grid',
-                      placeItems: 'center',
-                      bgcolor: 'primary.main',
-                      color: '#fff',
-                      mb: 4,
-                    }}
-                  >
-                    <KeyOutlinedIcon />
-                  </Box>
-                  <Typography variant="h2" sx={{ fontSize: { xs: '3rem', md: '4rem' } }}>
-                    Доступ подтверждён
-                  </Typography>
-                  <Typography color="text.secondary" sx={{ mt: 3, lineHeight: 1.7, maxWidth: 420 }}>
-                    Активная сессия найдена. Панель управления станет следующим разделом личного пространства.
-                  </Typography>
-                  {error && <Alert severity="error" variant="outlined" sx={{ mt: 4, width: '100%' }}>{error}</Alert>}
-                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 6, width: { xs: '100%', sm: 'auto' } }}>
-                    <Button
-                      onClick={handleLogout}
-                      variant="contained"
-                      disabled={revoking}
-                      sx={{ minWidth: 132, minHeight: 48, boxShadow: 'none' }}
-                    >
-                      {revoking ? <CircularProgress size={21} color="inherit" /> : 'Выйти'}
-                    </Button>
-                    <Button href="/" variant="outlined" color="inherit" sx={{ px: 3, minHeight: 48 }}>
-                      Вернуться на сайт
-                    </Button>
-                  </Stack>
-                </Stack>
+                <AdminProfile
+                  loggingOut={revoking}
+                  onLogout={handleLogout}
+                  onSessionExpired={handleSessionExpired}
+                />
               ) : (
                 <>
                   <Typography variant="overline" color="primary.main" sx={{ letterSpacing: '.18em' }}>

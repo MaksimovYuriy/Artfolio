@@ -15,3 +15,12 @@ export interface ArtistProfile {
   instagram?: string
   socialLinks?: SocialLink[]
 }
+
+export interface EditableArtistProfile {
+  name: string
+  tagline: string
+  biography: string
+  artistStatement: string
+  avatarUrl: string
+  email: string
+}
