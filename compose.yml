@@ -52,5 +52,16 @@ services:
     mem_limit: 128m
     cpus: 0.25
 
+  key:
+    image: ghcr.io/maksimovyuriy/artfolio-backend:latest
+    command: ["./artfolio-key"]
+    env_file:
+      - .env
+    profiles:
+      - tools
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:
