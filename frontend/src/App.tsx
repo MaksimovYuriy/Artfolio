@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Box, CircularProgress } from '@mui/material'
 import { About } from './components/About/About'
-import { AdminPlaceholder } from './components/AdminPlaceholder/AdminPlaceholder'
+import { AdminLogin } from './components/AdminLogin/AdminLogin'
 import { Contacts } from './components/Contacts/Contacts'
 import { Footer } from './components/Footer/Footer'
 import { Gallery } from './components/Gallery/Gallery'
@@ -46,7 +46,7 @@ function PublicSite() {
 }
 
 function App() {
-  return window.location.pathname.startsWith('/admin') ? <AdminPlaceholder /> : <PublicSite />
+  return window.location.pathname.startsWith('/admin') ? <AdminLogin /> : <PublicSite />
 }
 
 export default App
