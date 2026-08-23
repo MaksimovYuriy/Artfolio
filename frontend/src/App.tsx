@@ -43,16 +43,21 @@ function PublicSite() {
         <Stack spacing={3} sx={{ width: '100%', maxWidth: 520, alignItems: 'flex-start' }}>
           <Typography variant="h2" sx={{ fontSize: { xs: '2.8rem', md: '4rem' } }}>Портфолио временно недоступно</Typography>
           <Alert severity="error" variant="outlined" sx={{ width: '100%' }}>{error}</Alert>
-          <Button
-            variant="contained"
-            onClick={() => {
-              setError(null)
-              setArtist(null)
-              setReloadKey((key) => key + 1)
-            }}
-          >
-            Попробовать снова
-          </Button>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <Button
+              variant="contained"
+              onClick={() => {
+                setError(null)
+                setArtist(null)
+                setReloadKey((key) => key + 1)
+              }}
+            >
+              Попробовать снова
+            </Button>
+            <Button href="/admin" variant="outlined" color="inherit">
+              Войти в личный кабинет
+            </Button>
+          </Stack>
         </Stack>
       </Box>
     )
