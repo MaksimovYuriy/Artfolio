@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import KeyOutlinedIcon from '@mui/icons-material/KeyOutlined'
@@ -17,14 +17,41 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import { AdminAuthError, createAdminSession } from '../../services/adminService'
+import {
+  AdminAuthError,
+  createAdminSession,
+  revokeAdminSession,
+  verifyAdminSession,
+} from '../../services/adminService'
+
+type AuthStatus = 'checking' | 'anonymous' | 'authenticated'
 
 export function AdminLogin() {
   const [accessKey, setAccessKey] = useState('')
   const [showKey, setShowKey] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [revoking, setRevoking] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [authenticated, setAuthenticated] = useState(false)
+  const [authStatus, setAuthStatus] = useState<AuthStatus>('checking')
+
+  useEffect(() => {
+    let active = true
+
+    verifyAdminSession()
+      .then((authenticated) => {
+        if (active) setAuthStatus(authenticated ? 'authenticated' : 'anonymous')
+      })
+      .catch((caughtError: unknown) => {
+        if (!active) return
+
+        setError(caughtError instanceof AdminAuthError ? caughtError.message : 'Произошла неизвестная ошибка.')
+        setAuthStatus('anonymous')
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -41,11 +68,25 @@ export function AdminLogin() {
     try {
       await createAdminSession(normalizedKey)
       setAccessKey('')
-      setAuthenticated(true)
+      setAuthStatus('authenticated')
     } catch (caughtError) {
       setError(caughtError instanceof AdminAuthError ? caughtError.message : 'Произошла неизвестная ошибка.')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  async function handleLogout() {
+    setRevoking(true)
+    setError(null)
+
+    try {
+      await revokeAdminSession()
+      setAuthStatus('anonymous')
+    } catch (caughtError) {
+      setError(caughtError instanceof AdminAuthError ? caughtError.message : 'Произошла неизвестная ошибка.')
+    } finally {
+      setRevoking(false)
     }
   }
 
@@ -142,7 +183,17 @@ export function AdminLogin() {
                 <ArrowBackIcon sx={{ fontSize: 18 }} /> Вернуться к портфолио
               </Link>
 
-              {authenticated ? (
+              {authStatus === 'checking' ? (
+                <Stack sx={{ alignItems: 'flex-start' }} aria-live="polite">
+                  <CircularProgress size={28} />
+                  <Typography variant="h2" sx={{ mt: 4, fontSize: { xs: '3rem', md: '4rem' } }}>
+                    Проверяем доступ
+                  </Typography>
+                  <Typography color="text.secondary" sx={{ mt: 3, lineHeight: 1.7 }}>
+                    Это займёт всего несколько секунд.
+                  </Typography>
+                </Stack>
+              ) : authStatus === 'authenticated' ? (
                 <Stack sx={{ alignItems: 'flex-start' }}>
                   <Box
                     sx={{
@@ -161,11 +212,22 @@ export function AdminLogin() {
                     Доступ подтверждён
                   </Typography>
                   <Typography color="text.secondary" sx={{ mt: 3, lineHeight: 1.7, maxWidth: 420 }}>
-                    Сессия создана. Панель управления станет следующим разделом личного пространства.
+                    Активная сессия найдена. Панель управления станет следующим разделом личного пространства.
                   </Typography>
-                  <Button href="/" variant="outlined" color="inherit" sx={{ mt: 6, px: 3, py: 1.4 }}>
-                    Вернуться на сайт
-                  </Button>
+                  {error && <Alert severity="error" variant="outlined" sx={{ mt: 4, width: '100%' }}>{error}</Alert>}
+                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 6, width: { xs: '100%', sm: 'auto' } }}>
+                    <Button
+                      onClick={handleLogout}
+                      variant="contained"
+                      disabled={revoking}
+                      sx={{ minWidth: 132, minHeight: 48, boxShadow: 'none' }}
+                    >
+                      {revoking ? <CircularProgress size={21} color="inherit" /> : 'Выйти'}
+                    </Button>
+                    <Button href="/" variant="outlined" color="inherit" sx={{ px: 3, minHeight: 48 }}>
+                      Вернуться на сайт
+                    </Button>
+                  </Stack>
                 </Stack>
               ) : (
                 <>
