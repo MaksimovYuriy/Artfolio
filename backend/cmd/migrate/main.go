@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/maksimovyuriy/artfolio/backend/internal/migrator"
+	"github.com/maksimovyuriy/artfolio/backend/internal/lib/migrator"
 )
 
 func main() {

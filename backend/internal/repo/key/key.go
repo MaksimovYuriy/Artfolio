@@ -31,3 +31,18 @@ func (r *Repo) Create(ctx context.Context, keyHash []byte) error {
 
 	return nil
 }
+
+func (r *Repo) Find(ctx context.Context, keyHash []byte) (int64, error) {
+	const query = `
+		SELECT id
+		FROM admin_keys
+		WHERE key_hash = $1
+	`
+
+	var id int64
+	if err := r.database.QueryRowContext(ctx, query, keyHash).Scan(&id); err != nil {
+		return 0, fmt.Errorf("find admin key: %w", err)
+	}
+
+	return id, nil
+}

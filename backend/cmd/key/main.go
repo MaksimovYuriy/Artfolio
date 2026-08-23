@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/maksimovyuriy/artfolio/backend/internal/keygen"
+	"github.com/maksimovyuriy/artfolio/backend/internal/lib/keygen"
 )
 
 func main() {

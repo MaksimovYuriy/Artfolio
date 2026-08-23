@@ -11,7 +11,11 @@ import (
 	"github.com/maksimovyuriy/artfolio/backend/internal/config"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi"
 	"github.com/maksimovyuriy/artfolio/backend/internal/lib/logger"
+	"github.com/maksimovyuriy/artfolio/backend/internal/repo/key"
+	"github.com/maksimovyuriy/artfolio/backend/internal/repo/session"
 	"github.com/maksimovyuriy/artfolio/backend/internal/storage/postgres"
+
+	sessionusecase "github.com/maksimovyuriy/artfolio/backend/internal/usecase/session"
 )
 
 func Run() error {
@@ -33,9 +37,14 @@ func Run() error {
 	defer database.Close()
 	log.Info("Database started")
 
-	// Зависимости
+	keyRepo := key.NewRepo(database)
+	sessionRepo := session.NewRepo(database)
 
-	router := restapi.NewRouter()
+	sessionUseCase := sessionusecase.NewUseCase(keyRepo, sessionRepo)
+
+	sessionController := restapi.NewSessionController(sessionUseCase)
+
+	router := restapi.NewRouter(sessionController)
 	server := restapi.NewServer(appCfg.HTTP, router)
 
 	apiErrors := make(chan error, 1)
