@@ -4,11 +4,13 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
+	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/middleware"
 )
 
 func NewRouter(
 	sessionController *SessionController,
 	artistProfileController *ArtistProfileController,
+	authMiddleware *middleware.Auth,
 ) http.Handler {
 	r := chi.NewRouter()
 
@@ -17,12 +19,19 @@ func NewRouter(
 		_, _ = w.Write([]byte("OK"))
 	})
 
-	r.Post("/admin/session", sessionController.Create)
-	r.Get("/admin/session", sessionController.Verify)
-	r.Delete("/admin/session", sessionController.Revoke)
-
 	r.Get("/artist_profile", artistProfileController.Get)
-	r.Put("/admin/artist_profile", artistProfileController.Update)
+
+	r.Route("/admin", func(r chi.Router) {
+		r.Post("/session", sessionController.Create)
+		r.Get("/session", sessionController.Verify)
+		r.Delete("/session", sessionController.Revoke)
+
+		r.Group(func(r chi.Router) {
+			r.Use(authMiddleware.VerifySession)
+
+			r.Put("/artist_profile", artistProfileController.Update)
+		})
+	})
 
 	return r
 }

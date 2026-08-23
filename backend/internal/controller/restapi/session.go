@@ -6,10 +6,9 @@ import (
 	"time"
 
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/dto"
+	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/middleware"
 	"github.com/maksimovyuriy/artfolio/backend/internal/usecase"
 )
-
-const sessionCookieName = "artfolio_session"
 
 type SessionController struct {
 	useCase usecase.SessionUseCase
@@ -39,7 +38,7 @@ func (c *SessionController) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     sessionCookieName,
+		Name:     middleware.SessionCookieName,
 		Value:    session.Token,
 		Path:     "/",
 		Expires:  session.ExpiresAt,
@@ -52,7 +51,7 @@ func (c *SessionController) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *SessionController) Verify(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie(sessionCookieName)
+	cookie, err := r.Cookie(middleware.SessionCookieName)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
@@ -72,7 +71,7 @@ func (c *SessionController) Verify(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *SessionController) Revoke(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie(sessionCookieName)
+	cookie, err := r.Cookie(middleware.SessionCookieName)
 	if err == nil {
 		if err := c.useCase.Revoke(r.Context(), cookie.Value); err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -81,7 +80,7 @@ func (c *SessionController) Revoke(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     sessionCookieName,
+		Name:     middleware.SessionCookieName,
 		Value:    "",
 		Path:     "/",
 		Expires:  time.Unix(0, 0),

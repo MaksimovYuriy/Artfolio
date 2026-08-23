@@ -10,6 +10,7 @@ import (
 
 	"github.com/maksimovyuriy/artfolio/backend/internal/config"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi"
+	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/middleware"
 	"github.com/maksimovyuriy/artfolio/backend/internal/lib/logger"
 	artistprofile "github.com/maksimovyuriy/artfolio/backend/internal/repo/artist_profile"
 	"github.com/maksimovyuriy/artfolio/backend/internal/repo/key"
@@ -49,9 +50,12 @@ func Run() error {
 	sessionController := restapi.NewSessionController(sessionUseCase)
 	artistProfileController := restapi.NewArtistProfileController(artistProfileUseCase)
 
+	authMiddleware := middleware.NewAuth(sessionUseCase)
+
 	router := restapi.NewRouter(
 		sessionController,
 		artistProfileController,
+		authMiddleware,
 	)
 	server := restapi.NewServer(appCfg.HTTP, router)
 
