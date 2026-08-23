@@ -1,11 +1,11 @@
 package restapi
 
 import (
-	"encoding/json"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/dto"
 	"github.com/maksimovyuriy/artfolio/backend/internal/usecase"
 )
 
@@ -19,13 +19,9 @@ func NewSessionController(useCase usecase.SessionUseCase) *SessionController {
 	return &SessionController{useCase: useCase}
 }
 
-type createSessionRequest struct {
-	AccessKey string `json:"accessKey"`
-}
-
 func (c *SessionController) Create(w http.ResponseWriter, r *http.Request) {
-	var request createSessionRequest
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+	var request dto.CreateSessionRequest
+	if err := decodeJSON(w, r, &request); err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}

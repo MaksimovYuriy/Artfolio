@@ -3,6 +3,8 @@ package repo
 import (
 	"context"
 	"time"
+
+	"github.com/maksimovyuriy/artfolio/backend/internal/entity"
 )
 
 type KeyRepository interface {
@@ -29,4 +31,9 @@ type SessionRepository interface {
 		tokenHash []byte,
 		revokedAt time.Time,
 	) error
+}
+
+type ArtistProfileRepository interface {
+	Get(ctx context.Context) (entity.ArtistProfile, error)
+	Update(ctx context.Context, profile entity.ArtistProfile) error
 }

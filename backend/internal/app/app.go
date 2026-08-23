@@ -11,10 +11,12 @@ import (
 	"github.com/maksimovyuriy/artfolio/backend/internal/config"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi"
 	"github.com/maksimovyuriy/artfolio/backend/internal/lib/logger"
+	artistprofile "github.com/maksimovyuriy/artfolio/backend/internal/repo/artist_profile"
 	"github.com/maksimovyuriy/artfolio/backend/internal/repo/key"
 	"github.com/maksimovyuriy/artfolio/backend/internal/repo/session"
 	"github.com/maksimovyuriy/artfolio/backend/internal/storage/postgres"
 
+	artistusecase "github.com/maksimovyuriy/artfolio/backend/internal/usecase/artist_profile"
 	sessionusecase "github.com/maksimovyuriy/artfolio/backend/internal/usecase/session"
 )
 
@@ -39,12 +41,18 @@ func Run() error {
 
 	keyRepo := key.NewRepo(database)
 	sessionRepo := session.NewRepo(database)
+	artistProfileRepo := artistprofile.NewRepo(database)
 
 	sessionUseCase := sessionusecase.NewUseCase(keyRepo, sessionRepo)
+	artistProfileUseCase := artistusecase.NewUseCase(artistProfileRepo)
 
 	sessionController := restapi.NewSessionController(sessionUseCase)
+	artistProfileController := restapi.NewArtistProfileController(artistProfileUseCase)
 
-	router := restapi.NewRouter(sessionController)
+	router := restapi.NewRouter(
+		sessionController,
+		artistProfileController,
+	)
 	server := restapi.NewServer(appCfg.HTTP, router)
 
 	apiErrors := make(chan error, 1)
