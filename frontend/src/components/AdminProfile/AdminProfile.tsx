@@ -111,25 +111,13 @@ export function AdminProfile({ loggingOut, onLogout, onSessionExpired }: AdminPr
 
       <Divider sx={{ mb: 5 }} />
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 3fr) minmax(260px, 2fr)' }, gap: { xs: 5, md: 8 } }}>
+      <Box sx={{ maxWidth: 760 }}>
         <Stack spacing={3}>
           <TextField required label="Имя" value={profile.name} onChange={(e) => updateField('name', e.target.value)} slotProps={{ htmlInput: { maxLength: 64 } }} helperText={`${profile.name.length}/64`} />
           <TextField label="Слоган" value={profile.tagline} onChange={(e) => updateField('tagline', e.target.value)} slotProps={{ htmlInput: { maxLength: 256 } }} helperText={`${profile.tagline.length}/256`} />
           <TextField label="Биография" value={profile.biography} onChange={(e) => updateField('biography', e.target.value)} multiline minRows={5} />
           <TextField label="Творческое высказывание" value={profile.artistStatement} onChange={(e) => updateField('artistStatement', e.target.value)} multiline minRows={5} />
           <TextField label="Email" type="email" value={profile.email} onChange={(e) => updateField('email', e.target.value)} />
-          <TextField label="URL фотографии" value={profile.avatarUrl} onChange={(e) => updateField('avatarUrl', e.target.value)} placeholder="https://example.com/photo.jpg" />
-        </Stack>
-
-        <Stack spacing={3}>
-          <Typography variant="overline" color="text.secondary">Предпросмотр фотографии</Typography>
-          <Box sx={{ aspectRatio: '4 / 5', bgcolor: 'background.paper', display: 'grid', placeItems: 'center', overflow: 'hidden', '& img': { width: '100%', height: '100%', objectFit: 'cover' } }}>
-            {profile.avatarUrl ? (
-              <Box component="img" src={profile.avatarUrl} alt={profile.name || 'Фотография художницы'} />
-            ) : (
-              <Typography color="text.secondary" variant="body2">Фотография не указана</Typography>
-            )}
-          </Box>
         </Stack>
       </Box>
 
