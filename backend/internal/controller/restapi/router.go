@@ -10,6 +10,7 @@ import (
 func NewRouter(
 	sessionController *SessionController,
 	artistProfileController *ArtistProfileController,
+	artworkController *ArtworkController,
 	authMiddleware *middleware.Auth,
 ) http.Handler {
 	r := chi.NewRouter()
@@ -20,6 +21,7 @@ func NewRouter(
 	})
 
 	r.Get("/artist_profile", artistProfileController.Get)
+	r.Get("/artworks", artworkController.ListPublished)
 
 	r.Route("/admin", func(r chi.Router) {
 		r.Post("/session", sessionController.Create)
@@ -30,6 +32,11 @@ func NewRouter(
 			r.Use(authMiddleware.VerifySession)
 
 			r.Put("/artist_profile", artistProfileController.Update)
+
+			r.Get("/artworks", artworkController.ListAll)
+			r.Post("/artworks", artworkController.Create)
+			r.Put("/artworks/:id", artworkController.Update)
+			r.Delete("/artworks/:id", artworkController.Delete)
 		})
 	})
 

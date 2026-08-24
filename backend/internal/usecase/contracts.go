@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"errors"
+	"io"
 
 	"github.com/maksimovyuriy/artfolio/backend/internal/entity"
 )
@@ -22,4 +23,17 @@ type SessionUseCase interface {
 type ArtistProfileUseCase interface {
 	Get(ctx context.Context) (entity.ArtistProfile, error)
 	Update(ctx context.Context, profile entity.ArtistProfile) error
+}
+
+type ArtworkUseCase interface {
+	ListPublished(ctx context.Context) ([]entity.Artwork, error)
+	ListAll(ctx context.Context) ([]entity.Artwork, error)
+	Create(ctx context.Context, artwork entity.Artwork) (entity.Artwork, error)
+	Update(ctx context.Context, artwork entity.Artwork) error
+	Delete(ctx context.Context, id int64) error
+}
+
+type ArtworkStorage interface {
+	Save(ctx context.Context, content io.Reader, contentType string) (string, error)
+	Delete(ctx context.Context, key string) error
 }

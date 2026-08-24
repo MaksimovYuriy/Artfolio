@@ -13,11 +13,13 @@ import (
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/middleware"
 	"github.com/maksimovyuriy/artfolio/backend/internal/lib/logger"
 	artistprofile "github.com/maksimovyuriy/artfolio/backend/internal/repo/artist_profile"
+	"github.com/maksimovyuriy/artfolio/backend/internal/repo/artwork"
 	"github.com/maksimovyuriy/artfolio/backend/internal/repo/key"
 	"github.com/maksimovyuriy/artfolio/backend/internal/repo/session"
 	"github.com/maksimovyuriy/artfolio/backend/internal/storage/postgres"
 
 	artistusecase "github.com/maksimovyuriy/artfolio/backend/internal/usecase/artist_profile"
+	artworkusecase "github.com/maksimovyuriy/artfolio/backend/internal/usecase/artwork"
 	sessionusecase "github.com/maksimovyuriy/artfolio/backend/internal/usecase/session"
 )
 
@@ -43,18 +45,22 @@ func Run() error {
 	keyRepo := key.NewRepo(database)
 	sessionRepo := session.NewRepo(database)
 	artistProfileRepo := artistprofile.NewRepo(database)
+	artworkRepo := artwork.NewRepo(database)
 
 	sessionUseCase := sessionusecase.NewUseCase(keyRepo, sessionRepo)
 	artistProfileUseCase := artistusecase.NewUseCase(artistProfileRepo)
+	artworkUseCase := artworkusecase.NewUseCase(artworkRepo)
 
 	sessionController := restapi.NewSessionController(sessionUseCase)
 	artistProfileController := restapi.NewArtistProfileController(artistProfileUseCase)
+	artworkController := restapi.NewArtworkController(artworkUseCase)
 
 	authMiddleware := middleware.NewAuth(sessionUseCase)
 
 	router := restapi.NewRouter(
 		sessionController,
 		artistProfileController,
+		artworkController,
 		authMiddleware,
 	)
 	server := restapi.NewServer(appCfg.HTTP, router)

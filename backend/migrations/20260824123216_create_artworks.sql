@@ -1,0 +1,17 @@
+-- +goose Up
+CREATE TABLE artworks (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	title VARCHAR(256) NOT NULL,
+	description TEXT,
+	technique VARCHAR(256),
+	year SMALLINT,
+	image_key TEXT NOT NULL,
+	image_alt VARCHAR(256),
+	position INTEGER NOT NULL DEFAULT 0,
+	is_published BOOLEAN NOT NULL DEFAULT FALSE,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- +goose Down
+DROP TABLE IF EXISTS artworks;
