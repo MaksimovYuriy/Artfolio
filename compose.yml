@@ -1,12 +1,21 @@
 services:
-  frontend:
-    image: ghcr.io/maksimovyuriy/artfolio-frontend:latest
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
+      - "443:443/udp"
     volumes:
-      - ./certs/artfolio.crt:/etc/nginx/certs/artfolio.crt:ro
-      - ./certs/artfolio.key:/etc/nginx/certs/artfolio.key:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+
+  frontend:
+    image: ghcr.io/maksimovyuriy/artfolio-frontend:latest
     restart: unless-stopped
     mem_limit: 128m
     cpus: 0.25
@@ -69,3 +78,5 @@ services:
 
 volumes:
   postgres_data:
+  caddy_data:
+  caddy_config:
