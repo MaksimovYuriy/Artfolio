@@ -3,7 +3,6 @@ package usecase
 import (
 	"context"
 	"errors"
-	"io"
 
 	"github.com/maksimovyuriy/artfolio/backend/internal/entity"
 )
@@ -31,9 +30,4 @@ type ArtworkUseCase interface {
 	Create(ctx context.Context, artwork entity.Artwork) (entity.Artwork, error)
 	Update(ctx context.Context, artwork entity.Artwork) error
 	Delete(ctx context.Context, id int64) error
-}
-
-type ArtworkStorage interface {
-	Save(ctx context.Context, content io.Reader, contentType string) (string, error)
-	Delete(ctx context.Context, key string) error
 }

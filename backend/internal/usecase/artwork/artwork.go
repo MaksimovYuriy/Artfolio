@@ -4,16 +4,18 @@ import (
 	"context"
 
 	"github.com/maksimovyuriy/artfolio/backend/internal/entity"
+	"github.com/maksimovyuriy/artfolio/backend/internal/lib/storage"
 	"github.com/maksimovyuriy/artfolio/backend/internal/repo"
 	"github.com/maksimovyuriy/artfolio/backend/internal/usecase"
 )
 
 type UseCase struct {
-	repo repo.ArtworkRepository
+	repo    repo.ArtworkRepository
+	storage storage.Artwork
 }
 
-func NewUseCase(repo repo.ArtworkRepository) *UseCase {
-	return &UseCase{repo: repo}
+func NewUseCase(repo repo.ArtworkRepository, storage storage.Artwork) *UseCase {
+	return &UseCase{repo: repo, storage: storage}
 }
 
 var _ usecase.ArtworkUseCase = (*UseCase)(nil)

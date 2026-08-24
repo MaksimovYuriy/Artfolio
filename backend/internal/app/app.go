@@ -12,6 +12,7 @@ import (
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/middleware"
 	"github.com/maksimovyuriy/artfolio/backend/internal/lib/logger"
+	artworkstorage "github.com/maksimovyuriy/artfolio/backend/internal/lib/storage/artwork"
 	artistprofile "github.com/maksimovyuriy/artfolio/backend/internal/repo/artist_profile"
 	"github.com/maksimovyuriy/artfolio/backend/internal/repo/artwork"
 	"github.com/maksimovyuriy/artfolio/backend/internal/repo/key"
@@ -42,6 +43,12 @@ func Run() error {
 	defer database.Close()
 	log.Info("Database started")
 
+	artworkStorage, err := artworkstorage.New(appCfg.Storage)
+	if err != nil {
+		return err
+	}
+	log.Info("Artwork storage started")
+
 	keyRepo := key.NewRepo(database)
 	sessionRepo := session.NewRepo(database)
 	artistProfileRepo := artistprofile.NewRepo(database)
@@ -49,7 +56,7 @@ func Run() error {
 
 	sessionUseCase := sessionusecase.NewUseCase(keyRepo, sessionRepo)
 	artistProfileUseCase := artistusecase.NewUseCase(artistProfileRepo)
-	artworkUseCase := artworkusecase.NewUseCase(artworkRepo)
+	artworkUseCase := artworkusecase.NewUseCase(artworkRepo, artworkStorage)
 
 	sessionController := restapi.NewSessionController(sessionUseCase)
 	artistProfileController := restapi.NewArtistProfileController(artistProfileUseCase)

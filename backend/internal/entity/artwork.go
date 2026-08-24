@@ -15,3 +15,9 @@ type Artwork struct {
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
+
+type StoredArtworkImage struct {
+	Key    string
+	Width  int
+	Height int
+}

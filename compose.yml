@@ -10,6 +10,7 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+      - artwork_media:/srv/media:ro
     depends_on:
       - frontend
       - backend
@@ -27,11 +28,13 @@ services:
     env_file:
       - .env
     restart: unless-stopped
-    mem_limit: 128m
+    mem_limit: 384m
     cpus: 0.25
     depends_on:
       migrate:
         condition: service_completed_successfully
+    volumes:
+      - artwork_media:/var/lib/artfolio/media
 
   migrate:
     image: ghcr.io/maksimovyuriy/artfolio-backend:latest
@@ -80,3 +83,4 @@ volumes:
   postgres_data:
   caddy_data:
   caddy_config:
+  artwork_media:
