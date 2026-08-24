@@ -4,7 +4,7 @@ import type { Artwork } from '../../types/artwork'
 export function ArtworkCard({ artwork }: { artwork: Artwork }) {
   return (
     <Box component="article">
-      <Box sx={{ aspectRatio: '4 / 5', bgcolor: 'background.paper', overflow: 'hidden', position: 'relative', '& img': { width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .6s ease' }, '&:hover img': { transform: 'scale(1.02)' } }}>
+      <Box sx={{ aspectRatio: '4 / 5', bgcolor: 'background.paper', overflow: 'hidden', position: 'relative', '& img': { width: '100%', height: '100%', objectFit: 'contain', transition: 'transform .6s ease' }, '&:hover img': { transform: 'scale(1.02)' } }}>
         {artwork.imageUrl ? (
           <img src={artwork.imageUrl} alt={artwork.imageAlt ?? artwork.title} />
         ) : (

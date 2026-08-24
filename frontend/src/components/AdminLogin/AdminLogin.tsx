@@ -24,8 +24,10 @@ import {
   verifyAdminSession,
 } from '../../services/adminService'
 import { AdminProfile } from '../AdminProfile/AdminProfile'
+import { AdminArtworks } from '../AdminArtworks/AdminArtworks'
 
 type AuthStatus = 'checking' | 'anonymous' | 'authenticated'
+type AdminSection = 'profile' | 'artworks'
 
 export function AdminLogin() {
   const [accessKey, setAccessKey] = useState('')
@@ -34,6 +36,7 @@ export function AdminLogin() {
   const [revoking, setRevoking] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [authStatus, setAuthStatus] = useState<AuthStatus>('checking')
+  const [section, setSection] = useState<AdminSection>('profile')
 
   useEffect(() => {
     let active = true
@@ -202,11 +205,21 @@ export function AdminLogin() {
                   </Typography>
                 </Stack>
               ) : authStatus === 'authenticated' ? (
-                <AdminProfile
-                  loggingOut={revoking}
-                  onLogout={handleLogout}
-                  onSessionExpired={handleSessionExpired}
-                />
+				section === 'profile' ? (
+				  <AdminProfile
+					loggingOut={revoking}
+					onLogout={handleLogout}
+					onOpenArtworks={() => setSection('artworks')}
+					onSessionExpired={handleSessionExpired}
+				  />
+				) : (
+				  <AdminArtworks
+					loggingOut={revoking}
+					onLogout={handleLogout}
+					onOpenProfile={() => setSection('profile')}
+					onSessionExpired={handleSessionExpired}
+				  />
+				)
               ) : (
                 <>
                   <Typography variant="overline" color="primary.main" sx={{ letterSpacing: '.18em' }}>

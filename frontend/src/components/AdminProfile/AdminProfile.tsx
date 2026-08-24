@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined'
+import CollectionsOutlinedIcon from '@mui/icons-material/CollectionsOutlined'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
 import {
   Alert,
@@ -22,10 +23,11 @@ import type { EditableArtistProfile } from '../../types/artist'
 interface AdminProfileProps {
   loggingOut: boolean
   onLogout: () => void
+  onOpenArtworks: () => void
   onSessionExpired: (message: string) => void
 }
 
-export function AdminProfile({ loggingOut, onLogout, onSessionExpired }: AdminProfileProps) {
+export function AdminProfile({ loggingOut, onLogout, onOpenArtworks, onSessionExpired }: AdminProfileProps) {
   const [profile, setProfile] = useState<EditableArtistProfile>({ ...emptyArtistProfile })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -97,16 +99,10 @@ export function AdminProfile({ loggingOut, onLogout, onSessionExpired }: AdminPr
             Здесь можно обновить тексты и контакты, которые видят посетители портфолио.
           </Typography>
         </Box>
-        <Button
-          type="button"
-          onClick={onLogout}
-          disabled={loggingOut}
-          startIcon={loggingOut ? <CircularProgress size={18} /> : <LogoutOutlinedIcon />}
-          color="inherit"
-          sx={{ alignSelf: 'flex-start' }}
-        >
-          Выйти
-        </Button>
+		<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ alignSelf: 'flex-start' }}>
+		  <Button type="button" onClick={onOpenArtworks} startIcon={<CollectionsOutlinedIcon />} color="inherit">Работы</Button>
+		  <Button type="button" onClick={onLogout} disabled={loggingOut} startIcon={loggingOut ? <CircularProgress size={18} /> : <LogoutOutlinedIcon />} color="inherit">Выйти</Button>
+		</Stack>
       </Stack>
 
       <Divider sx={{ mb: 5 }} />
