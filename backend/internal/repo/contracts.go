@@ -2,10 +2,13 @@ package repo
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/maksimovyuriy/artfolio/backend/internal/entity"
 )
+
+var ErrNotFound = errors.New("repository entity not found")
 
 type KeyRepository interface {
 	Create(ctx context.Context, keyHash []byte) error
@@ -41,7 +44,9 @@ type ArtistProfileRepository interface {
 type ArtworkRepository interface {
 	ListPublished(ctx context.Context) ([]entity.Artwork, error)
 	ListAll(ctx context.Context) ([]entity.Artwork, error)
+	GetByID(ctx context.Context, id int64) (entity.Artwork, error)
 	Create(ctx context.Context, artwork entity.Artwork) (entity.Artwork, error)
-	Update(ctx context.Context, artwork entity.Artwork) error
-	Delete(ctx context.Context, id int64) error
+	Update(ctx context.Context, artwork entity.Artwork) (entity.Artwork, error)
+	UpdateWithImage(ctx context.Context, artwork entity.Artwork) (entity.Artwork, error)
+	Delete(ctx context.Context, id int64) (entity.Artwork, error)
 }

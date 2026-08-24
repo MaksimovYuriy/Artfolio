@@ -3,11 +3,17 @@ package usecase
 import (
 	"context"
 	"errors"
+	"io"
 
 	"github.com/maksimovyuriy/artfolio/backend/internal/entity"
 )
 
-var ErrInvalidArtistProfile = errors.New("invalid artist profile")
+var (
+	ErrInvalidArtistProfile = errors.New("invalid artist profile")
+	ErrInvalidArtwork       = errors.New("invalid artwork")
+	ErrArtworkNotFound      = errors.New("artwork not found")
+	ErrArtworkImageRequired = errors.New("artwork image is required")
+)
 
 type KeyCreator interface {
 	Create(ctx context.Context) (string, error)
@@ -27,7 +33,7 @@ type ArtistProfileUseCase interface {
 type ArtworkUseCase interface {
 	ListPublished(ctx context.Context) ([]entity.Artwork, error)
 	ListAll(ctx context.Context) ([]entity.Artwork, error)
-	Create(ctx context.Context, artwork entity.Artwork) (entity.Artwork, error)
-	Update(ctx context.Context, artwork entity.Artwork) error
+	Create(ctx context.Context, artwork entity.Artwork, image io.Reader) (entity.Artwork, error)
+	Update(ctx context.Context, artwork entity.Artwork, image io.Reader) error
 	Delete(ctx context.Context, id int64) error
 }

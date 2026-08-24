@@ -1,4 +1,4 @@
-package restapi
+package jsonutil
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 
 const maxJSONBodySize = 1 << 20
 
-func decodeJSON(w http.ResponseWriter, r *http.Request, destination any) error {
+func Decode(w http.ResponseWriter, r *http.Request, destination any) error {
 	r.Body = http.MaxBytesReader(w, r.Body, maxJSONBodySize)
 
 	decoder := json.NewDecoder(r.Body)
@@ -29,7 +29,7 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, destination any) error {
 	return nil
 }
 
-func encodeJSON(w http.ResponseWriter, status int, value any) error {
+func Encode(w http.ResponseWriter, status int, value any) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	return json.NewEncoder(w).Encode(value)

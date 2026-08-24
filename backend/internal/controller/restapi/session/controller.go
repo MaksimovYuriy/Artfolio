@@ -1,26 +1,27 @@
-package restapi
+package session
 
 import (
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/dto"
+	sessiondto "github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/dto/session"
+	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/jsonutil"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/middleware"
 	"github.com/maksimovyuriy/artfolio/backend/internal/usecase"
 )
 
-type SessionController struct {
+type Controller struct {
 	useCase usecase.SessionUseCase
 }
 
-func NewSessionController(useCase usecase.SessionUseCase) *SessionController {
-	return &SessionController{useCase: useCase}
+func New(useCase usecase.SessionUseCase) *Controller {
+	return &Controller{useCase: useCase}
 }
 
-func (c *SessionController) Create(w http.ResponseWriter, r *http.Request) {
-	var request dto.CreateSessionRequest
-	if err := decodeJSON(w, r, &request); err != nil {
+func (c *Controller) Create(w http.ResponseWriter, r *http.Request) {
+	var request sessiondto.CreateSessionRequest
+	if err := jsonutil.Decode(w, r, &request); err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
@@ -50,7 +51,7 @@ func (c *SessionController) Create(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (c *SessionController) Verify(w http.ResponseWriter, r *http.Request) {
+func (c *Controller) Verify(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(middleware.SessionCookieName)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
@@ -70,7 +71,7 @@ func (c *SessionController) Verify(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (c *SessionController) Revoke(w http.ResponseWriter, r *http.Request) {
+func (c *Controller) Revoke(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(middleware.SessionCookieName)
 	if err == nil {
 		if err := c.useCase.Revoke(r.Context(), cookie.Value); err != nil {

@@ -1,25 +1,26 @@
-package restapi
+package artistprofile
 
 import (
 	"database/sql"
 	"errors"
 	"net/http"
 
-	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/dto"
+	artistprofiledto "github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/dto/artistprofile"
+	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/jsonutil"
 	"github.com/maksimovyuriy/artfolio/backend/internal/usecase"
 )
 
-type ArtistProfileController struct {
+type Controller struct {
 	usecase usecase.ArtistProfileUseCase
 }
 
-func NewArtistProfileController(
+func New(
 	usecase usecase.ArtistProfileUseCase,
-) *ArtistProfileController {
-	return &ArtistProfileController{usecase: usecase}
+) *Controller {
+	return &Controller{usecase: usecase}
 }
 
-func (c *ArtistProfileController) Get(w http.ResponseWriter, r *http.Request) {
+func (c *Controller) Get(w http.ResponseWriter, r *http.Request) {
 	profile, err := c.usecase.Get(r.Context())
 	if errors.Is(err, sql.ErrNoRows) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
@@ -30,13 +31,13 @@ func (c *ArtistProfileController) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := dto.ArtistProfileResponseFromEntity(profile)
-	_ = encodeJSON(w, http.StatusOK, response)
+	response := artistprofiledto.ArtistProfileResponseFromEntity(profile)
+	_ = jsonutil.Encode(w, http.StatusOK, response)
 }
 
-func (c *ArtistProfileController) Update(w http.ResponseWriter, r *http.Request) {
-	var request dto.UpdateArtistProfileRequest
-	if err := decodeJSON(w, r, &request); err != nil {
+func (c *Controller) Update(w http.ResponseWriter, r *http.Request) {
+	var request artistprofiledto.UpdateArtistProfileRequest
+	if err := jsonutil.Decode(w, r, &request); err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}

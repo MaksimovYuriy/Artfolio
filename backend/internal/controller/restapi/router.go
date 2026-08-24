@@ -4,13 +4,16 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
+	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/artistprofile"
+	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/artwork"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/middleware"
+	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/session"
 )
 
 func NewRouter(
-	sessionController *SessionController,
-	artistProfileController *ArtistProfileController,
-	artworkController *ArtworkController,
+	sessionController *session.Controller,
+	artistProfileController *artistprofile.Controller,
+	artworkController *artwork.Controller,
 	authMiddleware *middleware.Auth,
 ) http.Handler {
 	r := chi.NewRouter()

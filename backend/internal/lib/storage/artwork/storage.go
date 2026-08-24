@@ -20,13 +20,6 @@ import (
 	"github.com/maksimovyuriy/artfolio/backend/internal/lib/storage"
 )
 
-var (
-	ErrFileTooLarge       = errors.New("artwork image is too large")
-	ErrInvalidImage       = errors.New("invalid artwork image")
-	ErrImageTooManyPixels = errors.New("artwork image has too many pixels")
-	ErrInvalidKey         = errors.New("invalid artwork image key")
-)
-
 type Storage struct {
 	root        string
 	temporary   string
@@ -90,10 +83,10 @@ func (s *Storage) Save(ctx context.Context, content io.Reader) (stored entity.St
 		return stored, fmt.Errorf("write temporary artwork image: %w", err)
 	}
 	if written > s.maxFileSize {
-		return stored, ErrFileTooLarge
+		return stored, storage.ErrFileTooLarge
 	}
 	if written == 0 {
-		return stored, ErrInvalidImage
+		return stored, storage.ErrInvalidImage
 	}
 
 	if _, err := temporaryFile.Seek(0, io.SeekStart); err != nil {
@@ -101,20 +94,20 @@ func (s *Storage) Save(ctx context.Context, content io.Reader) (stored entity.St
 	}
 	imageConfig, format, err := image.DecodeConfig(temporaryFile)
 	if err != nil {
-		return stored, ErrInvalidImage
+		return stored, storage.ErrInvalidImage
 	}
 	extension, ok := extensionForFormat(format)
 	if !ok || imageConfig.Width <= 0 || imageConfig.Height <= 0 {
-		return stored, ErrInvalidImage
+		return stored, storage.ErrInvalidImage
 	}
 	if int64(imageConfig.Width) > s.maxPixels/int64(imageConfig.Height) {
-		return stored, ErrImageTooManyPixels
+		return stored, storage.ErrImageTooManyPixels
 	}
 	if _, err := temporaryFile.Seek(0, io.SeekStart); err != nil {
 		return stored, fmt.Errorf("rewind temporary artwork image: %w", err)
 	}
 	if _, _, err := image.Decode(temporaryFile); err != nil {
-		return stored, ErrInvalidImage
+		return stored, storage.ErrInvalidImage
 	}
 
 	name, err := randomName()
@@ -149,13 +142,13 @@ func (s *Storage) Delete(ctx context.Context, key string) error {
 		return err
 	}
 	if !validKey(key) {
-		return ErrInvalidKey
+		return storage.ErrInvalidKey
 	}
 
 	filename := filepath.Join(s.root, filepath.FromSlash(key))
 	relative, err := filepath.Rel(s.root, filename)
 	if err != nil || relative == "." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
-		return ErrInvalidKey
+		return storage.ErrInvalidKey
 	}
 
 	if err := os.Remove(filename); err != nil && !errors.Is(err, os.ErrNotExist) {

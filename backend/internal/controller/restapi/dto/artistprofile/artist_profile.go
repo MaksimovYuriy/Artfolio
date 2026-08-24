@@ -1,4 +1,4 @@
-package dto
+package artistprofile
 
 import "github.com/maksimovyuriy/artfolio/backend/internal/entity"
 

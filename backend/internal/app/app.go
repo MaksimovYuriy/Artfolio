@@ -10,7 +10,10 @@ import (
 
 	"github.com/maksimovyuriy/artfolio/backend/internal/config"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi"
+	artistprofilecontroller "github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/artistprofile"
+	artworkcontroller "github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/artwork"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/middleware"
+	sessioncontroller "github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/session"
 	"github.com/maksimovyuriy/artfolio/backend/internal/lib/logger"
 	artworkstorage "github.com/maksimovyuriy/artfolio/backend/internal/lib/storage/artwork"
 	artistprofile "github.com/maksimovyuriy/artfolio/backend/internal/repo/artist_profile"
@@ -56,11 +59,11 @@ func Run() error {
 
 	sessionUseCase := sessionusecase.NewUseCase(keyRepo, sessionRepo)
 	artistProfileUseCase := artistusecase.NewUseCase(artistProfileRepo)
-	artworkUseCase := artworkusecase.NewUseCase(artworkRepo, artworkStorage)
+	artworkUseCase := artworkusecase.NewUseCase(artworkRepo, artworkStorage, log)
 
-	sessionController := restapi.NewSessionController(sessionUseCase)
-	artistProfileController := restapi.NewArtistProfileController(artistProfileUseCase)
-	artworkController := restapi.NewArtworkController(artworkUseCase)
+	sessionController := sessioncontroller.New(sessionUseCase)
+	artistProfileController := artistprofilecontroller.New(artistProfileUseCase)
+	artworkController := artworkcontroller.New(artworkUseCase, appCfg.Storage)
 
 	authMiddleware := middleware.NewAuth(sessionUseCase)
 
