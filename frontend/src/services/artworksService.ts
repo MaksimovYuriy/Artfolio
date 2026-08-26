@@ -1,29 +1,29 @@
 import type { AdminArtwork, Artwork, ArtworkInput } from '../types/artwork'
 
 export async function getArtworks(): Promise<Artwork[]> {
-	return requestJSON<Artwork[]>('/api/artworks', 'Не удалось загрузить работы.')
+	return requestJSON<Artwork[]>('/api/v1/artworks', 'Не удалось загрузить работы.')
 }
 
 export async function getAdminArtworks(): Promise<AdminArtwork[]> {
-	return requestJSON<AdminArtwork[]>('/api/admin/artworks', 'Не удалось загрузить список работ.')
+	return requestJSON<AdminArtwork[]>('/api/v1/admin/artworks', 'Не удалось загрузить список работ.')
 }
 
 export async function createArtwork(input: ArtworkInput, image: File, isPublished: boolean): Promise<AdminArtwork> {
-	return requestJSON<AdminArtwork>('/api/admin/artworks', 'Не удалось сохранить работу.', {
+	return requestJSON<AdminArtwork>('/api/v1/admin/artworks', 'Не удалось сохранить работу.', {
 		method: 'POST',
 		body: artworkFormData(input, isPublished, image),
 	})
 }
 
 export async function updateArtwork(id: number, input: ArtworkInput, image: File | null, isPublished: boolean): Promise<void> {
-	await request(`/api/admin/artworks/${id}`, 'Не удалось обновить работу.', {
+	await request(`/api/v1/admin/artworks/${id}`, 'Не удалось обновить работу.', {
 		method: 'PUT',
 		body: artworkFormData(input, isPublished, image),
 	})
 }
 
 export async function deleteArtwork(id: number): Promise<void> {
-	await request(`/api/admin/artworks/${id}`, 'Не удалось удалить работу.', { method: 'DELETE' })
+	await request(`/api/v1/admin/artworks/${id}`, 'Не удалось удалить работу.', { method: 'DELETE' })
 }
 
 export class ArtworkServiceError extends Error {

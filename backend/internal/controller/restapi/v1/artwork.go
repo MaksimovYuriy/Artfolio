@@ -1,4 +1,4 @@
-package artwork
+package v1
 
 import (
 	"errors"
@@ -8,48 +8,33 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi"
-	"github.com/maksimovyuriy/artfolio/backend/internal/config"
-	artworkdto "github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/dto/artwork"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/jsonutil"
+	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/v1/request"
 	"github.com/maksimovyuriy/artfolio/backend/internal/lib/storage"
 	"github.com/maksimovyuriy/artfolio/backend/internal/usecase"
 )
 
 const multipartMemoryLimit = 1 << 20
 
-type Controller struct {
-	usecase        usecase.ArtworkUseCase
-	publicURL      string
-	maxRequestSize int64
-}
-
-func New(usecase usecase.ArtworkUseCase, storageCfg config.StorageConfig) *Controller {
-	return &Controller{
-		usecase:        usecase,
-		publicURL:      storageCfg.PublicURL,
-		maxRequestSize: storageCfg.MaxFileSize + multipartMemoryLimit,
-	}
-}
-
-func (c *Controller) ListPublished(w http.ResponseWriter, r *http.Request) {
-	artworks, err := c.usecase.ListPublished(r.Context())
+func (c *Controller) listPublishedArtworks(w http.ResponseWriter, r *http.Request) {
+	artworks, err := c.artwork.ListPublished(r.Context())
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	_ = jsonutil.Encode(w, http.StatusOK, artworkdto.ArtworkResponsesFromEntities(artworks, c.publicURL))
+	_ = jsonutil.Encode(w, http.StatusOK, c.artworkMapper.FromEntities(artworks))
 }
 
-func (c *Controller) ListAll(w http.ResponseWriter, r *http.Request) {
-	artworks, err := c.usecase.ListAll(r.Context())
+func (c *Controller) listAllArtworks(w http.ResponseWriter, r *http.Request) {
+	artworks, err := c.artwork.ListAll(r.Context())
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	_ = jsonutil.Encode(w, http.StatusOK, artworkdto.AdminArtworkResponsesFromEntities(artworks, c.publicURL))
+	_ = jsonutil.Encode(w, http.StatusOK, c.artworkMapper.AdminFromEntities(artworks))
 }
 
-func (c *Controller) Create(w http.ResponseWriter, r *http.Request) {
+func (c *Controller) createArtwork(w http.ResponseWriter, r *http.Request) {
 	form, status, err := c.parseMultipart(w, r)
 	if err != nil {
 		http.Error(w, http.StatusText(status), status)
@@ -57,7 +42,7 @@ func (c *Controller) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	defer form.RemoveAll()
 
-	request, err := artworkdto.ArtworkRequestFromValues(form.Value)
+	body, err := request.ArtworkFromValues(form.Value)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
@@ -69,15 +54,15 @@ func (c *Controller) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	defer image.Close()
 
-	created, err := c.usecase.Create(r.Context(), request.Artwork(0), image)
+	created, err := c.artwork.Create(r.Context(), body.Artwork(0), image)
 	if err != nil {
 		writeArtworkError(w, err)
 		return
 	}
-	_ = jsonutil.Encode(w, http.StatusCreated, artworkdto.AdminArtworkResponseFromEntity(created, c.publicURL))
+	_ = jsonutil.Encode(w, http.StatusCreated, c.artworkMapper.AdminFromEntity(created))
 }
 
-func (c *Controller) Update(w http.ResponseWriter, r *http.Request) {
+func (c *Controller) updateArtwork(w http.ResponseWriter, r *http.Request) {
 	id, err := artworkID(r)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -90,7 +75,7 @@ func (c *Controller) Update(w http.ResponseWriter, r *http.Request) {
 	}
 	defer form.RemoveAll()
 
-	request, err := artworkdto.ArtworkRequestFromValues(form.Value)
+	body, err := request.ArtworkFromValues(form.Value)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
@@ -104,20 +89,20 @@ func (c *Controller) Update(w http.ResponseWriter, r *http.Request) {
 		defer image.Close()
 	}
 
-	if err := c.usecase.Update(r.Context(), request.Artwork(id), image); err != nil {
+	if err := c.artwork.Update(r.Context(), body.Artwork(id), image); err != nil {
 		writeArtworkError(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (c *Controller) Delete(w http.ResponseWriter, r *http.Request) {
+func (c *Controller) deleteArtwork(w http.ResponseWriter, r *http.Request) {
 	id, err := artworkID(r)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
-	if err := c.usecase.Delete(r.Context(), id); err != nil {
+	if err := c.artwork.Delete(r.Context(), id); err != nil {
 		writeArtworkError(w, err)
 		return
 	}
@@ -129,7 +114,6 @@ func (c *Controller) parseMultipart(w http.ResponseWriter, r *http.Request) (*mu
 	if err != nil || mediaType != "multipart/form-data" {
 		return nil, http.StatusUnsupportedMediaType, errors.New("multipart/form-data is required")
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, c.maxRequestSize)
 	if err := r.ParseMultipartForm(multipartMemoryLimit); err != nil {
 		var maxBytesError *http.MaxBytesError
 		if errors.As(err, &maxBytesError) {

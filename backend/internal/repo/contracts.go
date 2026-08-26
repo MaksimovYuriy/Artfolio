@@ -50,3 +50,10 @@ type ArtworkRepository interface {
 	UpdateWithImage(ctx context.Context, artwork entity.Artwork) (entity.Artwork, error)
 	Delete(ctx context.Context, id int64) (entity.Artwork, error)
 }
+
+type SocialLinkRepository interface {
+	List(ctx context.Context, artistId int64) ([]entity.SocialLink, error)
+	Create(ctx context.Context, link entity.SocialLink) (entity.SocialLink, error)
+	Update(ctx context.Context, link entity.SocialLink) (entity.SocialLink, error)
+	Delete(ctx context.Context, id int64) (entity.SocialLink, error)
+}

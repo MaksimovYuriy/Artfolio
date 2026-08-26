@@ -20,7 +20,7 @@ export async function getArtist(): Promise<ArtistProfile> {
   let response: Response
 
   try {
-    response = await fetch('/api/artist_profile')
+    response = await fetch('/api/v1/artist_profile')
   } catch {
     throw new ArtistServiceError('Не удалось связаться с сервером.')
   }

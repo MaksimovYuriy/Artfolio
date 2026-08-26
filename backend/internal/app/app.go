@@ -2,7 +2,9 @@ package app
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -10,22 +12,47 @@ import (
 
 	"github.com/maksimovyuriy/artfolio/backend/internal/config"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi"
-	artistprofilecontroller "github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/artistprofile"
-	artworkcontroller "github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/artwork"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/middleware"
-	sessioncontroller "github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/session"
+	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/v1"
+	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/v1/response"
 	"github.com/maksimovyuriy/artfolio/backend/internal/lib/logger"
+	"github.com/maksimovyuriy/artfolio/backend/internal/lib/storage"
 	artworkstorage "github.com/maksimovyuriy/artfolio/backend/internal/lib/storage/artwork"
+	"github.com/maksimovyuriy/artfolio/backend/internal/repo"
 	artistprofile "github.com/maksimovyuriy/artfolio/backend/internal/repo/artist_profile"
-	"github.com/maksimovyuriy/artfolio/backend/internal/repo/artwork"
-	"github.com/maksimovyuriy/artfolio/backend/internal/repo/key"
-	"github.com/maksimovyuriy/artfolio/backend/internal/repo/session"
+	artworkrepo "github.com/maksimovyuriy/artfolio/backend/internal/repo/artwork"
+	keyrepo "github.com/maksimovyuriy/artfolio/backend/internal/repo/key"
+	sessionrepo "github.com/maksimovyuriy/artfolio/backend/internal/repo/session"
+	sociallinkrepo "github.com/maksimovyuriy/artfolio/backend/internal/repo/social_link"
 	"github.com/maksimovyuriy/artfolio/backend/internal/storage/postgres"
 
+	"github.com/maksimovyuriy/artfolio/backend/internal/usecase"
 	artistusecase "github.com/maksimovyuriy/artfolio/backend/internal/usecase/artist_profile"
 	artworkusecase "github.com/maksimovyuriy/artfolio/backend/internal/usecase/artwork"
 	sessionusecase "github.com/maksimovyuriy/artfolio/backend/internal/usecase/session"
+	sociallinkusecase "github.com/maksimovyuriy/artfolio/backend/internal/usecase/social_link"
 )
+
+const multipartFormOverheadAllowance = 1 << 20
+
+type repositories struct {
+	key           repo.KeyRepository
+	session       repo.SessionRepository
+	artistProfile repo.ArtistProfileRepository
+	artwork       repo.ArtworkRepository
+	socialLink    repo.SocialLinkRepository
+}
+
+type useCases struct {
+	session       usecase.SessionUseCase
+	artistProfile usecase.ArtistProfileUseCase
+	artwork       usecase.ArtworkUseCase
+	socialLink    usecase.SocialLinkUseCase
+}
+
+type servers struct {
+	api *http.Server
+}
 
 func Run() error {
 	appCtx, appCancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -52,33 +79,14 @@ func Run() error {
 	}
 	log.Info("Artwork storage started")
 
-	keyRepo := key.NewRepo(database)
-	sessionRepo := session.NewRepo(database)
-	artistProfileRepo := artistprofile.NewRepo(database)
-	artworkRepo := artwork.NewRepo(database)
-
-	sessionUseCase := sessionusecase.NewUseCase(keyRepo, sessionRepo)
-	artistProfileUseCase := artistusecase.NewUseCase(artistProfileRepo)
-	artworkUseCase := artworkusecase.NewUseCase(artworkRepo, artworkStorage, log)
-
-	sessionController := sessioncontroller.New(sessionUseCase)
-	artistProfileController := artistprofilecontroller.New(artistProfileUseCase)
-	artworkController := artworkcontroller.New(artworkUseCase, appCfg.Storage)
-
-	authMiddleware := middleware.NewAuth(sessionUseCase)
-
-	router := restapi.NewRouter(
-		sessionController,
-		artistProfileController,
-		artworkController,
-		authMiddleware,
-	)
-	server := restapi.NewServer(appCfg.HTTP, router)
+	repositories := initRepositories(database)
+	useCases := initUseCases(repositories, artworkStorage, log)
+	servers := initServers(appCfg, useCases)
 
 	apiErrors := make(chan error, 1)
 	go func() {
-		log.Info("API started", slog.String("addr", server.Addr))
-		apiErrors <- server.ListenAndServe()
+		log.Info("API started", slog.String("addr", servers.api.Addr))
+		apiErrors <- servers.api.ListenAndServe()
 	}()
 
 	select {
@@ -91,10 +99,45 @@ func Run() error {
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer shutdownCancel()
 
-	if err := server.Shutdown(shutdownCtx); err != nil {
+	if err := servers.api.Shutdown(shutdownCtx); err != nil {
 		return err
 	}
 	log.Info("API stopped")
 
 	return nil
+}
+
+func initRepositories(database *sql.DB) repositories {
+	return repositories{
+		key:           keyrepo.NewRepo(database),
+		session:       sessionrepo.NewRepo(database),
+		artistProfile: artistprofile.NewRepo(database),
+		artwork:       artworkrepo.NewRepo(database),
+		socialLink:    sociallinkrepo.NewRepo(database),
+	}
+}
+
+func initUseCases(repositories repositories, artworkStorage storage.Artwork, log *slog.Logger) useCases {
+	return useCases{
+		session:       sessionusecase.NewUseCase(repositories.key, repositories.session),
+		artistProfile: artistusecase.NewUseCase(repositories.artistProfile),
+		artwork:       artworkusecase.NewUseCase(repositories.artwork, artworkStorage, log),
+		socialLink:    sociallinkusecase.NewUseCase(repositories.socialLink),
+	}
+}
+
+func initServers(appCfg *config.Config, useCases useCases) servers {
+	artworkMapper := response.NewArtworkMapper(appCfg.Storage.PublicURL)
+	controller := v1.NewController(
+		useCases.session,
+		useCases.artistProfile,
+		useCases.artwork,
+		useCases.socialLink,
+		artworkMapper,
+	)
+	authMiddleware := middleware.NewAuth(useCases.session)
+	maxUploadBodySize := appCfg.Storage.MaxFileSize + multipartFormOverheadAllowance
+	router := restapi.NewRouter(controller, authMiddleware, maxUploadBodySize)
+
+	return servers{api: restapi.NewServer(appCfg.HTTP, router)}
 }

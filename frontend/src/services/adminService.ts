@@ -30,7 +30,7 @@ export async function getEditableArtistProfile(): Promise<EditableArtistProfile>
   let response: Response
 
   try {
-    response = await fetch('/api/artist_profile', { credentials: 'same-origin' })
+    response = await fetch('/api/v1/artist_profile', { credentials: 'same-origin' })
   } catch {
     throw new AdminProfileError('Не удалось загрузить профиль. Проверьте соединение.')
   }
@@ -57,7 +57,7 @@ export async function updateArtistProfile(profile: EditableArtistProfile): Promi
   let response: Response
 
   try {
-    response = await fetch('/api/admin/artist_profile', {
+    response = await fetch('/api/v1/admin/artist_profile', {
       method: 'PUT',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
@@ -89,7 +89,7 @@ export async function createAdminSession(accessKey: string): Promise<void> {
   let response: Response
 
   try {
-    response = await fetch('/api/admin/session', {
+    response = await fetch('/api/v1/admin/session', {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
@@ -112,7 +112,7 @@ export async function verifyAdminSession(): Promise<boolean> {
   let response: Response
 
   try {
-    response = await fetch('/api/admin/session', {
+    response = await fetch('/api/v1/admin/session', {
       method: 'GET',
       credentials: 'same-origin',
     })
@@ -135,7 +135,7 @@ export async function revokeAdminSession(): Promise<void> {
   let response: Response
 
   try {
-    response = await fetch('/api/admin/session', {
+    response = await fetch('/api/v1/admin/session', {
       method: 'DELETE',
       credentials: 'same-origin',
     })

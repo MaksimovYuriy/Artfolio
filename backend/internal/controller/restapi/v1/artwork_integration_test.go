@@ -1,6 +1,6 @@
 //go:build integration
 
-package artwork
+package v1
 
 import (
 	"bytes"
@@ -26,7 +26,7 @@ import (
 	"github.com/go-chi/chi"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/maksimovyuriy/artfolio/backend/internal/config"
-	artworkdto "github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/dto/artwork"
+	apiresponse "github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/v1/response"
 	artworkstorage "github.com/maksimovyuriy/artfolio/backend/internal/lib/storage/artwork"
 	artworkrepo "github.com/maksimovyuriy/artfolio/backend/internal/repo/artwork"
 	artworkusecase "github.com/maksimovyuriy/artfolio/backend/internal/usecase/artwork"
@@ -51,7 +51,7 @@ func TestArtworkHTTPFlow(t *testing.T) {
 	repository := artworkrepo.NewRepo(database)
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 	uc := artworkusecase.NewUseCase(repository, files, log)
-	controller := New(uc, storageConfig)
+	controller := NewController(nil, nil, uc, nil, apiresponse.NewArtworkMapper(storageConfig.PublicURL))
 
 	created := createArtworkThroughHTTP(t, controller, jpegBytes(t), map[string]string{
 		"title":       "Первая работа",
@@ -64,11 +64,11 @@ func TestArtworkHTTPFlow(t *testing.T) {
 
 	t.Run("published list", func(t *testing.T) {
 		response := httptest.NewRecorder()
-		controller.ListPublished(response, httptest.NewRequest(http.MethodGet, "/artworks", nil))
+		controller.listPublishedArtworks(response, httptest.NewRequest(http.MethodGet, "/artworks", nil))
 		if response.Code != http.StatusOK {
 			t.Fatalf("ListPublished() status = %d, body = %q", response.Code, response.Body.String())
 		}
-		var artworks []artworkdto.ArtworkResponse
+		var artworks []apiresponse.Artwork
 		if err := json.Unmarshal(response.Body.Bytes(), &artworks); err != nil {
 			t.Fatalf("decode published list: %v", err)
 		}
@@ -86,7 +86,7 @@ func TestArtworkHTTPFlow(t *testing.T) {
 		})
 		request = withArtworkID(request, created.ID)
 		response := httptest.NewRecorder()
-		controller.Update(response, request)
+		controller.updateArtwork(response, request)
 		if response.Code != http.StatusNoContent {
 			t.Fatalf("Update() status = %d, body = %q", response.Code, response.Body.String())
 		}
@@ -112,7 +112,7 @@ func TestArtworkHTTPFlow(t *testing.T) {
 			created.ID,
 		)
 		response := httptest.NewRecorder()
-		controller.Delete(response, request)
+		controller.deleteArtwork(response, request)
 		if response.Code != http.StatusNoContent {
 			t.Fatalf("Delete() status = %d, body = %q", response.Code, response.Body.String())
 		}
@@ -126,15 +126,15 @@ func TestArtworkHTTPFlow(t *testing.T) {
 	})
 }
 
-func createArtworkThroughHTTP(t *testing.T, controller *Controller, content []byte, fields map[string]string) artworkdto.AdminArtworkResponse {
+func createArtworkThroughHTTP(t *testing.T, controller *Controller, content []byte, fields map[string]string) apiresponse.AdminArtwork {
 	t.Helper()
 	request := multipartRequest(t, http.MethodPost, "/admin/artworks", content, fields)
 	response := httptest.NewRecorder()
-	controller.Create(response, request)
+	controller.createArtwork(response, request)
 	if response.Code != http.StatusCreated {
 		t.Fatalf("Create() status = %d, body = %q", response.Code, response.Body.String())
 	}
-	var created artworkdto.AdminArtworkResponse
+	var created apiresponse.AdminArtwork
 	if err := json.Unmarshal(response.Body.Bytes(), &created); err != nil {
 		t.Fatalf("decode create response: %v", err)
 	}

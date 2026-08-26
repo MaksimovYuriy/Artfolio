@@ -4,17 +4,14 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
-	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/artistprofile"
-	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/artwork"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/middleware"
-	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/session"
+	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/v1"
 )
 
 func NewRouter(
-	sessionController *session.Controller,
-	artistProfileController *artistprofile.Controller,
-	artworkController *artwork.Controller,
+	controller *v1.Controller,
 	authMiddleware *middleware.Auth,
+	maxUploadBodySize int64,
 ) http.Handler {
 	r := chi.NewRouter()
 
@@ -23,25 +20,7 @@ func NewRouter(
 		_, _ = w.Write([]byte("OK"))
 	})
 
-	r.Get("/artist_profile", artistProfileController.Get)
-	r.Get("/artworks", artworkController.ListPublished)
-
-	r.Route("/admin", func(r chi.Router) {
-		r.Post("/session", sessionController.Create)
-		r.Get("/session", sessionController.Verify)
-		r.Delete("/session", sessionController.Revoke)
-
-		r.Group(func(r chi.Router) {
-			r.Use(authMiddleware.VerifySession)
-
-			r.Put("/artist_profile", artistProfileController.Update)
-
-			r.Get("/artworks", artworkController.ListAll)
-			r.Post("/artworks", artworkController.Create)
-			r.Put("/artworks/:id", artworkController.Update)
-			r.Delete("/artworks/:id", artworkController.Delete)
-		})
-	})
+	r.Mount("/v1", v1.NewRouter(controller, authMiddleware, maxUploadBodySize))
 
 	return r
 }

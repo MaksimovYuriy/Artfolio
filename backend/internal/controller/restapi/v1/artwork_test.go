@@ -1,4 +1,4 @@
-package artwork
+package v1
 
 import (
 	"bytes"
@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/maksimovyuriy/artfolio/backend/internal/config"
+	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/v1/response"
 	"github.com/maksimovyuriy/artfolio/backend/internal/entity"
 )
 
@@ -33,7 +33,7 @@ func TestArtworkControllerCreate(t *testing.T) {
 	request.Header.Set("Content-Type", w.FormDataContentType())
 	response := httptest.NewRecorder()
 
-	controller.Create(response, request)
+	controller.createArtwork(response, request)
 
 	if response.Code != http.StatusCreated {
 		t.Fatalf("Create() status = %d, body = %q", response.Code, response.Body.String())
@@ -49,7 +49,7 @@ func TestArtworkControllerCreateRequiresMultipartAndImage(t *testing.T) {
 	plainRequest := httptest.NewRequest(http.MethodPost, "/admin/artworks", strings.NewReader("title=work"))
 	plainRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	plainResponse := httptest.NewRecorder()
-	controller.Create(plainResponse, plainRequest)
+	controller.createArtwork(plainResponse, plainRequest)
 	if plainResponse.Code != http.StatusUnsupportedMediaType {
 		t.Fatalf("Create() plain status = %d", plainResponse.Code)
 	}
@@ -61,7 +61,7 @@ func TestArtworkControllerCreateRequiresMultipartAndImage(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, "/admin/artworks", &body)
 	request.Header.Set("Content-Type", w.FormDataContentType())
 	response := httptest.NewRecorder()
-	controller.Create(response, request)
+	controller.createArtwork(response, request)
 	if response.Code != http.StatusBadRequest {
 		t.Fatalf("Create() missing image status = %d", response.Code)
 	}
@@ -74,7 +74,7 @@ func TestArtworkControllerListPublishedUsesPublicDTO(t *testing.T) {
 	controller := testArtworkController(uc)
 	response := httptest.NewRecorder()
 
-	controller.ListPublished(response, httptest.NewRequest(http.MethodGet, "/artworks", nil))
+	controller.listPublishedArtworks(response, httptest.NewRequest(http.MethodGet, "/artworks", nil))
 
 	if response.Code != http.StatusOK {
 		t.Fatalf("ListPublished() status = %d", response.Code)
@@ -92,7 +92,7 @@ func TestArtworkControllerListPublishedUsesPublicDTO(t *testing.T) {
 }
 
 func testArtworkController(uc *fakeArtworkUseCase) *Controller {
-	return New(uc, config.StorageConfig{PublicURL: "/media", MaxFileSize: 1 << 20})
+	return NewController(nil, nil, uc, nil, response.NewArtworkMapper("/media"))
 }
 
 type fakeArtworkUseCase struct {

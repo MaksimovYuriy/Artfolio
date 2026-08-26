@@ -8,7 +8,7 @@ Repository-тесты используют отдельный PostgreSQL на п
 ```bash
 docker compose -f compose.integration.yml up -d --wait
 cd backend
-go test -tags=integration ./internal/repo/artwork ./internal/controller/restapi/artwork
+go test -tags=integration ./internal/repo/artwork ./internal/controller/restapi/v1
 cd ..
 docker compose -f compose.integration.yml down
 ```
