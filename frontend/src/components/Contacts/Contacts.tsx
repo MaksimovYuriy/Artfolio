@@ -7,8 +7,6 @@ import { SectionHeading } from '../SectionHeading/SectionHeading'
 export function Contacts({ artist }: { artist: ArtistProfile }) {
   const contacts = [
     artist.email && { label: 'Email', value: artist.email, href: `mailto:${artist.email}` },
-    artist.telegram && { label: 'Telegram', value: 'Написать в Telegram', href: artist.telegram },
-    artist.instagram && { label: 'Instagram', value: 'Открыть Instagram', href: artist.instagram },
     ...(artist.socialLinks ?? []).map((link) => ({ label: link.label, value: link.label, href: link.url })),
   ].filter(Boolean) as { label: string; value: string; href: string }[]
 

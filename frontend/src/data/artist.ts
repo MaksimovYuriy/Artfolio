@@ -10,6 +10,8 @@ export const mockArtist: ArtistProfile = {
   artistStatement:
     'Здесь будет текст о художественном методе, темах и материалах, с которыми работает автор.',
   email: 'artist@example.com',
-  telegram: 'https://t.me/example',
-  instagram: 'https://instagram.com/example',
+  socialLinks: [
+    { label: 'Telegram', url: 'https://t.me/example' },
+    { label: 'Instagram', url: 'https://instagram.com/example' },
+  ],
 }

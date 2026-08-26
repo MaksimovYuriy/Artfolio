@@ -1,7 +1,4 @@
-export interface SocialLink {
-  label: string
-  url: string
-}
+import type { SocialLink } from './socialLink'
 
 export interface ArtistProfile {
   brandName: string
@@ -11,8 +8,6 @@ export interface ArtistProfile {
   artistStatement?: string
   avatarUrl?: string
   email?: string
-  telegram?: string
-  instagram?: string
   socialLinks?: SocialLink[]
 }
 

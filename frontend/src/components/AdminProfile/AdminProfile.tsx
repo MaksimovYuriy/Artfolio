@@ -19,6 +19,7 @@ import {
   updateArtistProfile,
 } from '../../services/adminService'
 import type { EditableArtistProfile } from '../../types/artist'
+import { AdminSocialLinks } from '../AdminSocialLinks/AdminSocialLinks'
 
 interface AdminProfileProps {
   loggingOut: boolean
@@ -90,7 +91,7 @@ export function AdminProfile({ loggingOut, onLogout, onOpenArtworks, onSessionEx
   }
 
   return (
-    <Box component="form" onSubmit={handleSubmit} noValidate>
+    <Box>
       <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ justifyContent: 'space-between', gap: 3, mb: 6 }}>
         <Box>
           <Typography variant="overline" color="primary.main" sx={{ letterSpacing: '.18em' }}>Личный кабинет</Typography>
@@ -107,22 +108,27 @@ export function AdminProfile({ loggingOut, onLogout, onOpenArtworks, onSessionEx
 
       <Divider sx={{ mb: 5 }} />
 
-      <Box sx={{ maxWidth: 760 }}>
-        <Stack spacing={3}>
-          <TextField required label="Имя" value={profile.name} onChange={(e) => updateField('name', e.target.value)} slotProps={{ htmlInput: { maxLength: 64 } }} helperText={`${profile.name.length}/64`} />
-          <TextField label="Слоган" value={profile.tagline} onChange={(e) => updateField('tagline', e.target.value)} slotProps={{ htmlInput: { maxLength: 256 } }} helperText={`${profile.tagline.length}/256`} />
-          <TextField label="Биография" value={profile.biography} onChange={(e) => updateField('biography', e.target.value)} multiline minRows={5} />
-          <TextField label="Творческое высказывание" value={profile.artistStatement} onChange={(e) => updateField('artistStatement', e.target.value)} multiline minRows={5} />
-          <TextField label="Email" type="email" value={profile.email} onChange={(e) => updateField('email', e.target.value)} />
-        </Stack>
+      <Box component="form" onSubmit={handleSubmit} noValidate>
+        <Box sx={{ maxWidth: 760 }}>
+          <Stack spacing={3}>
+            <TextField required label="Имя" value={profile.name} onChange={(e) => updateField('name', e.target.value)} slotProps={{ htmlInput: { maxLength: 64 } }} helperText={`${profile.name.length}/64`} />
+            <TextField label="Слоган" value={profile.tagline} onChange={(e) => updateField('tagline', e.target.value)} slotProps={{ htmlInput: { maxLength: 256 } }} helperText={`${profile.tagline.length}/256`} />
+            <TextField label="Биография" value={profile.biography} onChange={(e) => updateField('biography', e.target.value)} multiline minRows={5} />
+            <TextField label="Творческое высказывание" value={profile.artistStatement} onChange={(e) => updateField('artistStatement', e.target.value)} multiline minRows={5} />
+            <TextField label="Email" type="email" value={profile.email} onChange={(e) => updateField('email', e.target.value)} />
+          </Stack>
+        </Box>
+
+        {error && <Alert severity="error" variant="outlined" sx={{ mt: 4 }}>{error}</Alert>}
+        {saved && <Alert severity="success" variant="outlined" sx={{ mt: 4 }}>Профиль сохранён.</Alert>}
+
+        <Button type="submit" variant="contained" size="large" disabled={saving || !profile.name.trim()} startIcon={saving ? <CircularProgress size={19} color="inherit" /> : <SaveOutlinedIcon />} sx={{ mt: 5, minHeight: 52, px: 4, boxShadow: 'none' }}>
+          {saving ? 'Сохраняем…' : 'Сохранить профиль'}
+        </Button>
       </Box>
 
-      {error && <Alert severity="error" variant="outlined" sx={{ mt: 4 }}>{error}</Alert>}
-      {saved && <Alert severity="success" variant="outlined" sx={{ mt: 4 }}>Профиль сохранён.</Alert>}
-
-      <Button type="submit" variant="contained" size="large" disabled={saving || !profile.name.trim()} startIcon={saving ? <CircularProgress size={19} color="inherit" /> : <SaveOutlinedIcon />} sx={{ mt: 5, minHeight: 52, px: 4, boxShadow: 'none' }}>
-        {saving ? 'Сохраняем…' : 'Сохранить профиль'}
-      </Button>
+      <Divider sx={{ my: 7 }} />
+      <AdminSocialLinks onSessionExpired={onSessionExpired} />
     </Box>
   )
 }
