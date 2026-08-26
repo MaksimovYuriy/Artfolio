@@ -5,6 +5,7 @@ on:
     branches:
       - main
   pull_request:
+    branches:
       - main
 
 jobs:
@@ -20,7 +21,7 @@ jobs:
         
       - name: Run backend tests
         working-directory: backend
-        run: go run -race ./...
+        run: go test -race ./...
 
   backend-integration:
     runs-on: ubuntu-latest
