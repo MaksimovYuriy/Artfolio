@@ -13,17 +13,27 @@ import (
 )
 
 type UseCase struct {
-	repo repo.ArtistProfileRepository
+	profileRepo    repo.ArtistProfileRepository
+	socialLinkRepo repo.SocialLinkRepository
 }
 
-func NewUseCase(repo repo.ArtistProfileRepository) *UseCase {
-	return &UseCase{repo: repo}
+func NewUseCase(profileRepo repo.ArtistProfileRepository, socialLinkRepo repo.SocialLinkRepository) *UseCase {
+	return &UseCase{profileRepo: profileRepo, socialLinkRepo: socialLinkRepo}
 }
 
 var _ usecase.ArtistProfileUseCase = (*UseCase)(nil)
 
 func (u *UseCase) Get(ctx context.Context) (entity.ArtistProfile, error) {
-	return u.repo.Get(ctx)
+	profile, err := u.profileRepo.Get(ctx)
+	if err != nil {
+		return entity.ArtistProfile{}, err
+	}
+	links, err := u.socialLinkRepo.List(ctx, profile.ID)
+	if err != nil {
+		return entity.ArtistProfile{}, fmt.Errorf("list artist social links: %w", err)
+	}
+	profile.SocialLinks = links
+	return profile, nil
 }
 
 func (u *UseCase) Update(ctx context.Context, profile entity.ArtistProfile) error {
@@ -32,7 +42,7 @@ func (u *UseCase) Update(ctx context.Context, profile entity.ArtistProfile) erro
 		return err
 	}
 
-	return u.repo.Update(ctx, profile)
+	return u.profileRepo.Update(ctx, profile)
 }
 
 func normalize(profile entity.ArtistProfile) entity.ArtistProfile {

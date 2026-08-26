@@ -20,13 +20,14 @@ var _ repo.ArtistProfileRepository = (*Repo)(nil)
 
 func (r *Repo) Get(ctx context.Context) (entity.ArtistProfile, error) {
 	const query = `
-		SELECT name, tagline, biography, artist_statement, avatar_url, email
+		SELECT id, name, tagline, biography, artist_statement, avatar_url, email
 		FROM artist_profiles
 		LIMIT 1
 	`
 
 	var profile entity.ArtistProfile
 	err := r.database.QueryRowContext(ctx, query).Scan(
+		&profile.ID,
 		&profile.Name,
 		&profile.Tagline,
 		&profile.Biography,

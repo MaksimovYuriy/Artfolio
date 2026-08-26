@@ -7,6 +7,10 @@ interface ArtistProfileResponse {
   artistStatement?: string | null
   avatarUrl?: string | null
   email?: string | null
+  socialLinks?: Array<{
+    label: string
+    url: string
+  }>
 }
 
 export class ArtistServiceError extends Error {
@@ -47,5 +51,6 @@ export async function getArtist(): Promise<ArtistProfile> {
     artistStatement: profile.artistStatement ?? undefined,
     avatarUrl: profile.avatarUrl ?? undefined,
     email: profile.email ?? undefined,
+    socialLinks: profile.socialLinks ?? [],
   }
 }

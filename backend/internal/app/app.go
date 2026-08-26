@@ -120,9 +120,9 @@ func initRepositories(database *sql.DB) repositories {
 func initUseCases(repositories repositories, artworkStorage storage.Artwork, log *slog.Logger) useCases {
 	return useCases{
 		session:       sessionusecase.NewUseCase(repositories.key, repositories.session),
-		artistProfile: artistusecase.NewUseCase(repositories.artistProfile),
+		artistProfile: artistusecase.NewUseCase(repositories.artistProfile, repositories.socialLink),
 		artwork:       artworkusecase.NewUseCase(repositories.artwork, artworkStorage, log),
-		socialLink:    sociallinkusecase.NewUseCase(repositories.socialLink),
+		socialLink:    sociallinkusecase.NewUseCase(repositories.artistProfile, repositories.socialLink),
 	}
 }
 

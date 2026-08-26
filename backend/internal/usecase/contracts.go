@@ -13,6 +13,7 @@ var (
 	ErrInvalidArtwork       = errors.New("invalid artwork")
 	ErrArtworkNotFound      = errors.New("artwork not found")
 	ErrArtworkImageRequired = errors.New("artwork image is required")
+	ErrInvalidSocialLinks   = errors.New("invalid social links")
 )
 
 type KeyCreator interface {
@@ -39,8 +40,6 @@ type ArtworkUseCase interface {
 }
 
 type SocialLinkUseCase interface {
-	List(ctx context.Context, artistId int64) ([]entity.SocialLink, error)
-	Create(ctx context.Context, link entity.SocialLink) (entity.SocialLink, error)
-	Update(ctx context.Context, link entity.SocialLink) (entity.SocialLink, error)
-	Delete(ctx context.Context, id int64) (entity.SocialLink, error)
+	List(ctx context.Context) ([]entity.SocialLink, error)
+	Replace(ctx context.Context, links []entity.SocialLink) error
 }

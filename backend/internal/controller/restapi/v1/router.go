@@ -27,6 +27,9 @@ func NewRouter(controller *Controller, authMiddleware *middleware.Auth, maxUploa
 			r.With(middleware.MaxBodySize(maxUploadBodySize)).Post("/artworks", controller.createArtwork)
 			r.With(middleware.MaxBodySize(maxUploadBodySize)).Put("/artworks/:id", controller.updateArtwork)
 			r.Delete("/artworks/:id", controller.deleteArtwork)
+
+			r.Get("/social_links", controller.listSocialLinks)
+			r.Put("/social_links", controller.replaceSocialLinks)
 		})
 	})
 
