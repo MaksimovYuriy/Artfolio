@@ -179,42 +179,42 @@ export function AdminArtworks({ loggingOut, onLogout, onOpenProfile, onSessionEx
         </Box>
       )}
 
-	  {editor && (
-		<ArtworkEditor
-		  key={editor.artwork?.id ?? 'new'}
-		  state={editor}
-		  onClose={() => setEditor(null)}
-		  onSaved={(saved) => {
-			setArtworks((items) => {
-			  const exists = items.some((item) => item.id === saved.id)
-			  return exists ? items.map((item) => item.id === saved.id ? saved : item) : [saved, ...items]
-			})
-			setEditor(null)
-		  }}
-		  onSessionExpired={onSessionExpired}
-		/>
-	  )}
+    {editor && (
+    <ArtworkEditor
+      key={editor.artwork?.id ?? 'new'}
+      state={editor}
+      onClose={() => setEditor(null)}
+      onSaved={(saved) => {
+      setArtworks((items) => {
+        const exists = items.some((item) => item.id === saved.id)
+        return exists ? items.map((item) => item.id === saved.id ? saved : item) : [saved, ...items]
+      })
+      setEditor(null)
+      }}
+      onSessionExpired={onSessionExpired}
+    />
+    )}
     </Box>
   )
 }
 
 function ArtworkEditor({ state, onClose, onSaved, onSessionExpired }: {
-	state: EditorState
+  state: EditorState
   onClose: () => void
   onSaved: (artwork: AdminArtwork) => void
   onSessionExpired: (message: string) => void
 }) {
-	const [input, setInput] = useState<ArtworkInput>(state.input)
-	const [image, setImage] = useState<File | null>(state.image)
-	const [preview, setPreview] = useState<string | null>(state.artwork?.imageUrl ?? null)
+  const [input, setInput] = useState<ArtworkInput>(state.input)
+  const [image, setImage] = useState<File | null>(state.image)
+  const [preview, setPreview] = useState<string | null>(state.artwork?.imageUrl ?? null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-	useEffect(() => {
-	  return () => {
-		if (preview?.startsWith('blob:')) URL.revokeObjectURL(preview)
-	  }
-	}, [preview])
+  useEffect(() => {
+    return () => {
+    if (preview?.startsWith('blob:')) URL.revokeObjectURL(preview)
+    }
+  }, [preview])
 
   function setField(field: keyof ArtworkInput, value: string) {
     setInput((current) => ({ ...current, [field]: value }))
@@ -230,10 +230,10 @@ function ArtworkEditor({ state, onClose, onSaved, onSessionExpired }: {
     if (file.size > maxImageSize) {
       setError('Файл слишком большой. Максимальный размер — 12 МБ.')
       return
-	  }
-	  const objectURL = URL.createObjectURL(file)
-	  setImage(file)
-	  setPreview(objectURL)
+    }
+    const objectURL = URL.createObjectURL(file)
+    setImage(file)
+    setPreview(objectURL)
     setError(null)
   }
 

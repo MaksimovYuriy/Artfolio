@@ -29,7 +29,7 @@ function PublicSite() {
       })
       .catch((caughtError: unknown) => {
         if (!active) return
-		setError(caughtError instanceof ArtistServiceError || caughtError instanceof Error ? caughtError.message : 'Не удалось загрузить сайт.')
+    setError(caughtError instanceof ArtistServiceError || caughtError instanceof Error ? caughtError.message : 'Не удалось загрузить сайт.')
       })
 
     return () => {

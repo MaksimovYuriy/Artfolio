@@ -1,4 +1,3 @@
-// TEMPORARY DESIGN TOKENS: replace values here when the visual identity is approved.
 export const designTokens = {
   colors: {
     background: '#f3f0ea',

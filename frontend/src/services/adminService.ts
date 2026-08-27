@@ -38,7 +38,7 @@ export async function getEditableArtistProfile(): Promise<EditableArtistProfile>
     return { ...emptyArtistProfile }
   }
   if (!response.ok) {
-    throw new AdminProfileError('Не удалось загрузить прфиль. Попробуйте позже.')
+    throw new AdminProfileError('Не удалось загрузить профиль. Попробуйте позже.')
   }
 
   const profile = await response.json() as Partial<EditableArtistProfile>

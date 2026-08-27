@@ -23,11 +23,20 @@ func (profile ArtistProfile) Validated() (ArtistProfile, error) {
 	}
 	if profile.Email != nil {
 		address, err := mail.ParseAddress(*profile.Email)
-		if err != nil || address.Address != *profile.Email {
+		if err != nil || address.Address != *profile.Email || !isASCII(*profile.Email) {
 			return ArtistProfile{}, NewValidationError("email", "is invalid")
 		}
 	}
 	return profile, nil
+}
+
+func isASCII(value string) bool {
+	for _, character := range value {
+		if character > 127 {
+			return false
+		}
+	}
+	return true
 }
 
 func (profile *ArtistProfile) normalize() {

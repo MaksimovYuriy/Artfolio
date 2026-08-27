@@ -100,15 +100,15 @@ export function AdminProfile({ loggingOut, onLogout, onOpenArtworks, onSessionEx
             Здесь можно обновить тексты и контакты, которые видят посетители портфолио.
           </Typography>
         </Box>
-		<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ alignSelf: 'flex-start' }}>
-		  <Button type="button" onClick={onOpenArtworks} startIcon={<CollectionsOutlinedIcon />} color="inherit">Работы</Button>
-		  <Button type="button" onClick={onLogout} disabled={loggingOut} startIcon={loggingOut ? <CircularProgress size={18} /> : <LogoutOutlinedIcon />} color="inherit">Выйти</Button>
-		</Stack>
+    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ alignSelf: 'flex-start' }}>
+      <Button type="button" onClick={onOpenArtworks} startIcon={<CollectionsOutlinedIcon />} color="inherit">Работы</Button>
+      <Button type="button" onClick={onLogout} disabled={loggingOut} startIcon={loggingOut ? <CircularProgress size={18} /> : <LogoutOutlinedIcon />} color="inherit">Выйти</Button>
+    </Stack>
       </Stack>
 
       <Divider sx={{ mb: 5 }} />
 
-      <Box component="form" onSubmit={handleSubmit} noValidate>
+      <Box component="form" onSubmit={handleSubmit}>
         <Box sx={{ maxWidth: 760 }}>
           <Stack spacing={3}>
             <TextField required label="Имя" value={profile.name} onChange={(e) => updateField('name', e.target.value)} slotProps={{ htmlInput: { maxLength: 64 } }} helperText={`${profile.name.length}/64`} />

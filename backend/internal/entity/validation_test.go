@@ -27,4 +27,10 @@ func TestValidatedRejectsBusinessRuleViolation(t *testing.T) {
 	if !errors.Is(err, ErrValidation) {
 		t.Fatalf("Artwork.Validated() error = %v, want ErrValidation", err)
 	}
+
+	email := "художник@example.com"
+	_, err = (ArtistProfile{Name: "Анна", Email: &email}).Validated()
+	if !errors.Is(err, ErrValidation) {
+		t.Fatalf("ArtistProfile.Validated() error = %v, want ErrValidation", err)
+	}
 }

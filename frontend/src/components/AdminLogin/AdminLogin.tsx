@@ -205,21 +205,21 @@ export function AdminLogin() {
                   </Typography>
                 </Stack>
               ) : authStatus === 'authenticated' ? (
-				section === 'profile' ? (
-				  <AdminProfile
-					loggingOut={revoking}
-					onLogout={handleLogout}
-					onOpenArtworks={() => setSection('artworks')}
-					onSessionExpired={handleSessionExpired}
-				  />
-				) : (
-				  <AdminArtworks
-					loggingOut={revoking}
-					onLogout={handleLogout}
-					onOpenProfile={() => setSection('profile')}
-					onSessionExpired={handleSessionExpired}
-				  />
-				)
+        section === 'profile' ? (
+          <AdminProfile
+          loggingOut={revoking}
+          onLogout={handleLogout}
+          onOpenArtworks={() => setSection('artworks')}
+          onSessionExpired={handleSessionExpired}
+          />
+        ) : (
+          <AdminArtworks
+          loggingOut={revoking}
+          onLogout={handleLogout}
+          onOpenProfile={() => setSection('profile')}
+          onSessionExpired={handleSessionExpired}
+          />
+        )
               ) : (
                 <>
                   <Typography variant="overline" color="primary.main" sx={{ letterSpacing: '.18em' }}>
