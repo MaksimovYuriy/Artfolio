@@ -7,7 +7,7 @@ import (
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/jsonutil"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/v1/request"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/v1/response"
-	"github.com/maksimovyuriy/artfolio/backend/internal/usecase"
+	"github.com/maksimovyuriy/artfolio/backend/internal/entity"
 )
 
 func (c *Controller) listSocialLinks(w http.ResponseWriter, r *http.Request) {
@@ -26,7 +26,7 @@ func (c *Controller) replaceSocialLinks(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if err := c.socialLink.Replace(r.Context(), body.Entities()); err != nil {
-		if errors.Is(err, usecase.ErrInvalidSocialLinks) {
+		if errors.Is(err, entity.ErrValidation) {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}

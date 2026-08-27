@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/maksimovyuriy/artfolio/backend/internal/entity"
-	"github.com/maksimovyuriy/artfolio/backend/internal/usecase"
 )
 
 func TestReplaceNormalizesAndSkipsEmptyHandles(t *testing.T) {
@@ -58,7 +57,7 @@ func TestReplaceRejectsInvalidAndDuplicatePlatforms(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			uc := NewUseCase(&fakeProfileRepository{profile: entity.ArtistProfile{ID: 1}}, &fakeSocialLinkRepository{})
-			if err := uc.Replace(context.Background(), test.links); !errors.Is(err, usecase.ErrInvalidSocialLinks) {
+			if err := uc.Replace(context.Background(), test.links); !errors.Is(err, entity.ErrValidation) {
 				t.Fatalf("Replace() error = %v", err)
 			}
 		})

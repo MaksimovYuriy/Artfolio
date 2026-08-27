@@ -49,8 +49,8 @@ func TestCreateValidatesBeforeSavingImage(t *testing.T) {
 	uc := newTestUseCase(&fakeRepository{}, files)
 
 	_, err := uc.Create(context.Background(), entity.Artwork{Title: "   "}, bytes.NewReader([]byte("image")))
-	if !errors.Is(err, usecase.ErrInvalidArtwork) {
-		t.Fatalf("Create() error = %v, want ErrInvalidArtwork", err)
+	if !errors.Is(err, entity.ErrValidation) {
+		t.Fatalf("Create() error = %v, want ErrValidation", err)
 	}
 	if files.saveCalls != 0 {
 		t.Fatalf("Create() storage save calls = %d, want 0", files.saveCalls)

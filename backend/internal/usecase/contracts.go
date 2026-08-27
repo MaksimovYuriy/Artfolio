@@ -9,11 +9,8 @@ import (
 )
 
 var (
-	ErrInvalidArtistProfile = errors.New("invalid artist profile")
-	ErrInvalidArtwork       = errors.New("invalid artwork")
 	ErrArtworkNotFound      = errors.New("artwork not found")
 	ErrArtworkImageRequired = errors.New("artwork image is required")
-	ErrInvalidSocialLinks   = errors.New("invalid social links")
 )
 
 type KeyCreator interface {

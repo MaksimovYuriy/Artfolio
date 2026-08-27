@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/maksimovyuriy/artfolio/backend/internal/entity"
 	"github.com/maksimovyuriy/artfolio/backend/internal/lib/storage"
@@ -30,7 +28,7 @@ var _ usecase.ArtworkUseCase = (*UseCase)(nil)
 
 func (u *UseCase) Delete(ctx context.Context, id int64) error {
 	if id <= 0 {
-		return usecase.ErrInvalidArtwork
+		return entity.NewValidationError("id", "must be positive")
 	}
 
 	deleted, err := u.repo.Delete(ctx, id)
@@ -62,9 +60,9 @@ func (u *UseCase) ListAll(ctx context.Context) ([]entity.Artwork, error) {
 }
 
 func (u *UseCase) Create(ctx context.Context, artwork entity.Artwork, image io.Reader) (entity.Artwork, error) {
-	artwork = normalize(artwork)
-	if !valid(artwork, false) {
-		return entity.Artwork{}, usecase.ErrInvalidArtwork
+	artwork, err := artwork.Validated()
+	if err != nil {
+		return entity.Artwork{}, err
 	}
 	if image == nil {
 		return entity.Artwork{}, usecase.ErrArtworkImageRequired
@@ -88,9 +86,12 @@ func (u *UseCase) Create(ctx context.Context, artwork entity.Artwork, image io.R
 }
 
 func (u *UseCase) Update(ctx context.Context, artwork entity.Artwork, image io.Reader) error {
-	artwork = normalize(artwork)
-	if !valid(artwork, true) {
-		return usecase.ErrInvalidArtwork
+	if artwork.ID <= 0 {
+		return entity.NewValidationError("id", "must be positive")
+	}
+	artwork, err := artwork.Validated()
+	if err != nil {
+		return err
 	}
 
 	if image == nil {
@@ -122,30 +123,6 @@ func updateError(err error) error {
 		return fmt.Errorf("update artwork: %w", err)
 	}
 	return nil
-}
-
-func normalize(artwork entity.Artwork) entity.Artwork {
-	artwork.Title = strings.TrimSpace(artwork.Title)
-	artwork.Description = strings.TrimSpace(artwork.Description)
-	artwork.Technique = strings.TrimSpace(artwork.Technique)
-	artwork.ImageAlt = strings.TrimSpace(artwork.ImageAlt)
-	return artwork
-}
-
-func valid(artwork entity.Artwork, requireID bool) bool {
-	if requireID && artwork.ID <= 0 {
-		return false
-	}
-	if artwork.Title == "" || utf8.RuneCountInString(artwork.Title) > 256 {
-		return false
-	}
-	if utf8.RuneCountInString(artwork.Technique) > 256 || utf8.RuneCountInString(artwork.ImageAlt) > 256 {
-		return false
-	}
-	if artwork.Year != nil && (*artwork.Year < 0 || *artwork.Year > 9999) {
-		return false
-	}
-	return artwork.Position >= 0
 }
 
 func (u *UseCase) deleteImage(ctx context.Context, key, message string) {

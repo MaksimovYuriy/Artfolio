@@ -8,7 +8,7 @@ import (
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/jsonutil"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/v1/request"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/v1/response"
-	"github.com/maksimovyuriy/artfolio/backend/internal/usecase"
+	"github.com/maksimovyuriy/artfolio/backend/internal/entity"
 )
 
 func (c *Controller) getArtistProfile(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +33,7 @@ func (c *Controller) updateArtistProfile(w http.ResponseWriter, r *http.Request)
 	}
 
 	if err := c.artistProfile.Update(r.Context(), body.ArtistProfile()); err != nil {
-		if errors.Is(err, usecase.ErrInvalidArtistProfile) {
+		if errors.Is(err, entity.ErrValidation) {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}

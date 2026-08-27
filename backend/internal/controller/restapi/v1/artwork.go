@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/jsonutil"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/v1/request"
+	"github.com/maksimovyuriy/artfolio/backend/internal/entity"
 	"github.com/maksimovyuriy/artfolio/backend/internal/lib/storage"
 	"github.com/maksimovyuriy/artfolio/backend/internal/usecase"
 )
@@ -150,7 +151,7 @@ func openImage(form *multipart.Form, required bool) (multipart.File, int, error)
 func artworkID(r *http.Request) (int64, error) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil || id <= 0 {
-		return 0, usecase.ErrInvalidArtwork
+		return 0, errors.New("invalid artwork id")
 	}
 	return id, nil
 }
@@ -159,7 +160,7 @@ func writeArtworkError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, usecase.ErrArtworkNotFound):
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-	case errors.Is(err, usecase.ErrInvalidArtwork), errors.Is(err, usecase.ErrArtworkImageRequired):
+	case errors.Is(err, entity.ErrValidation), errors.Is(err, usecase.ErrArtworkImageRequired):
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 	case errors.Is(err, storage.ErrFileTooLarge):
 		http.Error(w, http.StatusText(http.StatusRequestEntityTooLarge), http.StatusRequestEntityTooLarge)
