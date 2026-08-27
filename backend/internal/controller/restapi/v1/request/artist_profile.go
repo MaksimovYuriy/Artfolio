@@ -7,7 +7,6 @@ type UpdateArtistProfile struct {
 	Tagline         string  `json:"tagline"`
 	Biography       string  `json:"biography"`
 	ArtistStatement *string `json:"artistStatement"`
-	AvatarURL       *string `json:"avatarUrl"`
 	Email           *string `json:"email"`
 }
 
@@ -17,7 +16,6 @@ func (r UpdateArtistProfile) ArtistProfile() entity.ArtistProfile {
 		Tagline:         r.Tagline,
 		Biography:       r.Biography,
 		ArtistStatement: r.ArtistStatement,
-		AvatarURL:       r.AvatarURL,
 		Email:           r.Email,
 	}
 }

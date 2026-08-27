@@ -22,7 +22,6 @@ export const emptyArtistProfile: EditableArtistProfile = {
   tagline: '',
   biography: '',
   artistStatement: '',
-  avatarUrl: '',
   email: '',
 }
 
@@ -48,7 +47,6 @@ export async function getEditableArtistProfile(): Promise<EditableArtistProfile>
     tagline: profile.tagline ?? '',
     biography: profile.biography ?? '',
     artistStatement: profile.artistStatement ?? '',
-    avatarUrl: profile.avatarUrl ?? '',
     email: profile.email ?? '',
   }
 }
@@ -66,7 +64,6 @@ export async function updateArtistProfile(profile: EditableArtistProfile): Promi
         tagline: profile.tagline,
         biography: profile.biography,
         artistStatement: profile.artistStatement || null,
-        avatarUrl: profile.avatarUrl || null,
         email: profile.email || null,
       }),
     })

@@ -6,7 +6,6 @@ type ArtistProfile struct {
 	Tagline         string
 	Biography       string
 	ArtistStatement *string
-	AvatarURL       *string
 	Email           *string
 	SocialLinks     []SocialLink
 }

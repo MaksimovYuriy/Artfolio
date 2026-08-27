@@ -50,7 +50,6 @@ func normalize(profile entity.ArtistProfile) entity.ArtistProfile {
 	profile.Tagline = strings.TrimSpace(profile.Tagline)
 	profile.Biography = strings.TrimSpace(profile.Biography)
 	profile.ArtistStatement = normalizeOptional(profile.ArtistStatement)
-	profile.AvatarURL = normalizeOptional(profile.AvatarURL)
 	profile.Email = normalizeOptional(profile.Email)
 	return profile
 }

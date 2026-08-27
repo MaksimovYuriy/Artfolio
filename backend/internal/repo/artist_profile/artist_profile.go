@@ -20,7 +20,7 @@ var _ repo.ArtistProfileRepository = (*Repo)(nil)
 
 func (r *Repo) Get(ctx context.Context) (entity.ArtistProfile, error) {
 	const query = `
-		SELECT id, name, tagline, biography, artist_statement, avatar_url, email
+		SELECT id, name, tagline, biography, artist_statement, email
 		FROM artist_profiles
 		LIMIT 1
 	`
@@ -32,7 +32,6 @@ func (r *Repo) Get(ctx context.Context) (entity.ArtistProfile, error) {
 		&profile.Tagline,
 		&profile.Biography,
 		&profile.ArtistStatement,
-		&profile.AvatarURL,
 		&profile.Email,
 	)
 	if err != nil {
@@ -49,16 +48,14 @@ func (r *Repo) Update(ctx context.Context, profile entity.ArtistProfile) error {
 			tagline,
 			biography,
 			artist_statement,
-			avatar_url,
 			email
 		)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT ((true)) DO UPDATE SET
 			name = EXCLUDED.name,
 			tagline = EXCLUDED.tagline,
 			biography = EXCLUDED.biography,
 			artist_statement = EXCLUDED.artist_statement,
-			avatar_url = EXCLUDED.avatar_url,
 			email = EXCLUDED.email,
 			updated_at = CURRENT_TIMESTAMP
 	`
@@ -70,7 +67,6 @@ func (r *Repo) Update(ctx context.Context, profile entity.ArtistProfile) error {
 		profile.Tagline,
 		profile.Biography,
 		profile.ArtistStatement,
-		profile.AvatarURL,
 		profile.Email,
 	)
 	return err

@@ -5,7 +5,6 @@ interface ArtistProfileResponse {
   tagline: string
   biography: string
   artistStatement?: string | null
-  avatarUrl?: string | null
   email?: string | null
   socialLinks?: Array<{
     label: string
@@ -49,7 +48,6 @@ export async function getArtist(): Promise<ArtistProfile> {
     tagline: profile.tagline,
     biography: profile.biography,
     artistStatement: profile.artistStatement ?? undefined,
-    avatarUrl: profile.avatarUrl ?? undefined,
     email: profile.email ?? undefined,
     socialLinks: profile.socialLinks ?? [],
   }

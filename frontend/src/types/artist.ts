@@ -6,7 +6,6 @@ export interface ArtistProfile {
   tagline: string
   biography: string
   artistStatement?: string
-  avatarUrl?: string
   email?: string
   socialLinks?: SocialLink[]
 }
@@ -16,6 +15,5 @@ export interface EditableArtistProfile {
   tagline: string
   biography: string
   artistStatement: string
-  avatarUrl: string
   email: string
 }
