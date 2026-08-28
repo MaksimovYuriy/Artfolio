@@ -59,6 +59,26 @@ func (u *UseCase) ListAll(ctx context.Context) ([]entity.Artwork, error) {
 	return artworks, nil
 }
 
+func (u *UseCase) Reorder(ctx context.Context, artworkIDs []int64) error {
+	seen := make(map[int64]struct{}, len(artworkIDs))
+	for _, id := range artworkIDs {
+		if id <= 0 {
+			return entity.NewValidationError("artworkIds", "must contain positive ids")
+		}
+		if _, exists := seen[id]; exists {
+			return entity.NewValidationError("artworkIds", "must not contain duplicates")
+		}
+		seen[id] = struct{}{}
+	}
+
+	if err := u.repo.Reorder(ctx, artworkIDs); errors.Is(err, repo.ErrConflict) {
+		return usecase.ErrArtworkOrderConflict
+	} else if err != nil {
+		return fmt.Errorf("reorder artworks: %w", err)
+	}
+	return nil
+}
+
 func (u *UseCase) Create(ctx context.Context, artwork entity.Artwork, image io.Reader) (entity.Artwork, error) {
 	artwork, err := artwork.Validated()
 	if err != nil {

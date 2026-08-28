@@ -114,6 +114,25 @@ func TestDeleteMapsNotFound(t *testing.T) {
 	}
 }
 
+func TestReorderValidatesIDsAndMapsConflict(t *testing.T) {
+	tests := [][]int64{{1, 1}, {1, 0}, {-1}}
+	for _, ids := range tests {
+		repository := &fakeRepository{}
+		uc := newTestUseCase(repository, &fakeStorage{})
+		if err := uc.Reorder(context.Background(), ids); !errors.Is(err, entity.ErrValidation) {
+			t.Fatalf("Reorder(%v) error = %v, want validation error", ids, err)
+		}
+		if repository.reordered != nil {
+			t.Fatalf("Reorder(%v) called repository", ids)
+		}
+	}
+
+	uc := newTestUseCase(&fakeRepository{reorderErr: repo.ErrConflict}, &fakeStorage{})
+	if err := uc.Reorder(context.Background(), []int64{1, 2}); !errors.Is(err, usecase.ErrArtworkOrderConflict) {
+		t.Fatalf("Reorder() error = %v, want ErrArtworkOrderConflict", err)
+	}
+}
+
 func newTestUseCase(repository *fakeRepository, files *fakeStorage) *UseCase {
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 	return NewUseCase(repository, files, log)
@@ -126,6 +145,8 @@ type fakeRepository struct {
 	createErr       error
 	updateErr       error
 	deleteErr       error
+	reorderErr      error
+	reordered       []int64
 	updateWithImage bool
 }
 
@@ -159,6 +180,11 @@ func (r *fakeRepository) UpdateWithImage(_ context.Context, artwork entity.Artwo
 
 func (r *fakeRepository) Delete(context.Context, int64) (entity.Artwork, error) {
 	return r.previous, r.deleteErr
+}
+
+func (r *fakeRepository) Reorder(_ context.Context, artworkIDs []int64) error {
+	r.reordered = artworkIDs
+	return r.reorderErr
 }
 
 type fakeStorage struct {

@@ -17,14 +17,13 @@ type Artwork struct {
 	Technique   string
 	Year        *int16
 	ImageAlt    string
-	Position    int
 	IsPublished bool
 }
 
 func ArtworkFromValues(values url.Values) (Artwork, error) {
 	allowed := map[string]bool{
 		"title": true, "description": true, "technique": true, "year": true,
-		"imageAlt": true, "position": true, "isPublished": true,
+		"imageAlt": true, "isPublished": true,
 	}
 	for key := range values {
 		if !allowed[key] {
@@ -63,19 +62,6 @@ func ArtworkFromValues(values url.Values) (Artwork, error) {
 		year = &value
 	}
 
-	positionValue, err := singleValue(values, "position")
-	if err != nil {
-		return Artwork{}, err
-	}
-	position := 0
-	if positionValue != "" {
-		parsed, err := strconv.ParseInt(positionValue, 10, 32)
-		if err != nil {
-			return Artwork{}, fmt.Errorf("%w: invalid position", ErrInvalidArtworkForm)
-		}
-		position = int(parsed)
-	}
-
 	publishedValue, err := singleValue(values, "isPublished")
 	if err != nil {
 		return Artwork{}, err
@@ -94,7 +80,6 @@ func ArtworkFromValues(values url.Values) (Artwork, error) {
 		Technique:   technique,
 		Year:        year,
 		ImageAlt:    imageAlt,
-		Position:    position,
 		IsPublished: published,
 	}, nil
 }
@@ -107,9 +92,12 @@ func (r Artwork) Artwork(id int64) entity.Artwork {
 		Technique:   r.Technique,
 		Year:        r.Year,
 		ImageAlt:    r.ImageAlt,
-		Position:    r.Position,
 		IsPublished: r.IsPublished,
 	}
+}
+
+type ReorderArtworks struct {
+	ArtworkIDs []int64 `json:"artworkIds"`
 }
 
 func singleValue(values url.Values, key string) (string, error) {

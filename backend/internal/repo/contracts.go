@@ -8,7 +8,10 @@ import (
 	"github.com/maksimovyuriy/artfolio/backend/internal/entity"
 )
 
-var ErrNotFound = errors.New("repository entity not found")
+var (
+	ErrNotFound = errors.New("repository entity not found")
+	ErrConflict = errors.New("repository state conflict")
+)
 
 type KeyRepository interface {
 	Create(ctx context.Context, keyHash []byte) error
@@ -48,6 +51,7 @@ type ArtworkRepository interface {
 	Create(ctx context.Context, artwork entity.Artwork) (entity.Artwork, error)
 	Update(ctx context.Context, artwork entity.Artwork) (entity.Artwork, error)
 	UpdateWithImage(ctx context.Context, artwork entity.Artwork) (entity.Artwork, error)
+	Reorder(ctx context.Context, artworkIDs []int64) error
 	Delete(ctx context.Context, id int64) (entity.Artwork, error)
 }
 

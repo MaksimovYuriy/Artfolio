@@ -21,5 +21,4 @@ export interface ArtworkInput {
   technique: string
   year: string
   imageAlt: string
-  position: number
 }

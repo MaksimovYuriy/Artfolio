@@ -26,6 +26,14 @@ export async function deleteArtwork(id: number): Promise<void> {
   await request(`/api/v1/admin/artworks/${id}`, 'Не удалось удалить работу.', { method: 'DELETE' })
 }
 
+export async function reorderArtworks(artworkIds: number[]): Promise<void> {
+  await request('/api/v1/admin/artworks/order', 'Не удалось сохранить порядок работ.', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ artworkIds }),
+  })
+}
+
 export class ArtworkServiceError extends Error {
   unauthorized: boolean
 
@@ -43,7 +51,6 @@ function artworkFormData(input: ArtworkInput, isPublished: boolean, image: File 
   form.set('technique', input.technique)
   form.set('year', input.year)
   form.set('imageAlt', input.imageAlt)
-  form.set('position', String(input.position))
   form.set('isPublished', String(isPublished))
   if (image) form.set('image', image)
   return form
@@ -68,6 +75,7 @@ async function request(url: string, fallbackMessage: string, init?: RequestInit)
   if (response.status === 422) throw new ArtworkServiceError('У изображения слишком большое разрешение.')
   if (response.status === 400) throw new ArtworkServiceError('Проверьте заполнение полей.')
   if (response.status === 404) throw new ArtworkServiceError('Работа не найдена. Возможно, она уже удалена.')
+  if (response.status === 409) throw new ArtworkServiceError('Список работ изменился. Обновите страницу и повторите сортировку.')
   if (!response.ok) throw new ArtworkServiceError(fallbackMessage)
   return response
 }

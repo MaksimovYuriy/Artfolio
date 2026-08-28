@@ -98,12 +98,12 @@ npm run build
 
 ### Интеграционные тесты backend
 
-Repository-тесты используют отдельный PostgreSQL на порту `55432`:
+Интеграционные тесты из `backend/integration-tests` используют отдельный PostgreSQL на порту `55432`:
 
 ```bash
 docker compose -f compose.integration.yml up -d --wait
 cd backend
-go test -tags=integration ./internal/repo/artwork ./internal/repo/social_link ./internal/controller/restapi/v1
+go test -tags=integration ./integration-tests
 cd ..
 docker compose -f compose.integration.yml down
 ```

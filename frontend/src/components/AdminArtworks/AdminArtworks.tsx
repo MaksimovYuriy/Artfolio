@@ -1,5 +1,7 @@
 import { type DragEvent, useEffect, useState } from 'react'
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
+import ArrowDownwardOutlinedIcon from '@mui/icons-material/ArrowDownwardOutlined'
+import ArrowUpwardOutlinedIcon from '@mui/icons-material/ArrowUpwardOutlined'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
@@ -27,6 +29,7 @@ import {
   createArtwork,
   deleteArtwork,
   getAdminArtworks,
+  reorderArtworks,
   updateArtwork,
 } from '../../services/artworksService'
 import type { AdminArtwork, ArtworkInput } from '../../types/artwork'
@@ -53,7 +56,6 @@ const emptyInput: ArtworkInput = {
   technique: '',
   year: '',
   imageAlt: '',
-  position: 0,
 }
 
 export function AdminArtworks({ loggingOut, onLogout, onOpenProfile, onSessionExpired }: AdminArtworksProps) {
@@ -62,12 +64,21 @@ export function AdminArtworks({ loggingOut, onLogout, onOpenProfile, onSessionEx
   const [error, setError] = useState<string | null>(null)
   const [editor, setEditor] = useState<EditorState | null>(null)
   const [deletingID, setDeletingID] = useState<number | null>(null)
+  const [savedOrder, setSavedOrder] = useState<number[]>([])
+  const [savingOrder, setSavingOrder] = useState(false)
+
+  const currentOrder = artworks.map((artwork) => artwork.id)
+  const orderChanged = !sameOrder(currentOrder, savedOrder)
+  const featuredArtworkID = artworks.find((artwork) => artwork.isPublished)?.id
 
   useEffect(() => {
     let active = true
     getAdminArtworks()
       .then((items) => {
-        if (active) setArtworks(items)
+        if (active) {
+          setArtworks(items)
+          setSavedOrder(items.map((item) => item.id))
+        }
       })
       .catch((caughtError: unknown) => {
         if (!active) return
@@ -78,6 +89,49 @@ export function AdminArtworks({ loggingOut, onLogout, onOpenProfile, onSessionEx
       })
     return () => { active = false }
   }, [onSessionExpired])
+
+  useEffect(() => {
+    if (!orderChanged) return
+    const warnBeforeUnload = (event: BeforeUnloadEvent) => event.preventDefault()
+    window.addEventListener('beforeunload', warnBeforeUnload)
+    return () => window.removeEventListener('beforeunload', warnBeforeUnload)
+  }, [orderChanged])
+
+  function navigateWithOrderCheck(action: () => void) {
+    if (orderChanged && !window.confirm('Порядок работ не сохранён. Уйти без сохранения?')) return
+    action()
+  }
+
+  function moveArtwork(index: number, offset: -1 | 1) {
+    setArtworks((items) => {
+      const target = index + offset
+      if (target < 0 || target >= items.length) return items
+      const reordered = [...items]
+      ;[reordered[index], reordered[target]] = [reordered[target], reordered[index]]
+      return reordered
+    })
+    setError(null)
+  }
+
+  function cancelOrder() {
+    const positions = new Map(savedOrder.map((id, index) => [id, index]))
+    setArtworks((items) => [...items].sort((a, b) => (positions.get(a.id) ?? 0) - (positions.get(b.id) ?? 0)))
+    setError(null)
+  }
+
+  async function saveOrder() {
+    setSavingOrder(true)
+    setError(null)
+    try {
+      await reorderArtworks(currentOrder)
+      setArtworks((items) => items.map((item, position) => ({ ...item, position })))
+      setSavedOrder(currentOrder)
+    } catch (caughtError) {
+      handleServiceError(caughtError, onSessionExpired, setError)
+    } finally {
+      setSavingOrder(false)
+    }
+  }
 
   function openCreate() {
     setError(null)
@@ -95,7 +149,6 @@ export function AdminArtworks({ loggingOut, onLogout, onOpenProfile, onSessionEx
         technique: artwork.technique ?? '',
         year: artwork.year === undefined ? '' : String(artwork.year),
         imageAlt: artwork.imageAlt ?? '',
-        position: artwork.position,
       },
     })
   }
@@ -107,6 +160,7 @@ export function AdminArtworks({ loggingOut, onLogout, onOpenProfile, onSessionEx
     try {
       await deleteArtwork(artwork.id)
       setArtworks((items) => items.filter((item) => item.id !== artwork.id))
+      setSavedOrder((ids) => ids.filter((id) => id !== artwork.id))
     } catch (caughtError) {
       handleServiceError(caughtError, onSessionExpired, setError)
     } finally {
@@ -125,8 +179,8 @@ export function AdminArtworks({ loggingOut, onLogout, onOpenProfile, onSessionEx
           </Typography>
         </Box>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ alignSelf: { md: 'flex-start' } }}>
-          <Button onClick={onOpenProfile} startIcon={<PersonOutlineIcon />} color="inherit">Профиль</Button>
-          <Button onClick={onLogout} disabled={loggingOut} startIcon={loggingOut ? <CircularProgress size={18} /> : <LogoutOutlinedIcon />} color="inherit">Выйти</Button>
+          <Button onClick={() => navigateWithOrderCheck(onOpenProfile)} startIcon={<PersonOutlineIcon />} color="inherit">Профиль</Button>
+          <Button onClick={() => navigateWithOrderCheck(onLogout)} disabled={loggingOut} startIcon={loggingOut ? <CircularProgress size={18} /> : <LogoutOutlinedIcon />} color="inherit">Выйти</Button>
         </Stack>
       </Stack>
 
@@ -135,9 +189,15 @@ export function AdminArtworks({ loggingOut, onLogout, onOpenProfile, onSessionEx
         <Typography color="text.secondary">
           {loading ? 'Загружаем список…' : `${artworks.length} ${workCountLabel(artworks.length)}`}
         </Typography>
-        <Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={openCreate} sx={{ minHeight: 48, px: 3, boxShadow: 'none' }}>
-          Добавить работу
-        </Button>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+          <Button variant="outlined" onClick={cancelOrder} disabled={!orderChanged || savingOrder}>Отменить изменения</Button>
+          <Button variant="contained" onClick={() => void saveOrder()} disabled={!orderChanged || savingOrder} sx={{ boxShadow: 'none' }}>
+            {savingOrder ? <CircularProgress size={20} color="inherit" /> : 'Сохранить порядок'}
+          </Button>
+          <Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={openCreate} disabled={orderChanged || savingOrder} sx={{ minHeight: 48, px: 3, boxShadow: 'none' }}>
+            Добавить работу
+          </Button>
+        </Stack>
       </Stack>
 
       {error && <Alert severity="error" variant="outlined" sx={{ mb: 4 }}>{error}</Alert>}
@@ -152,7 +212,7 @@ export function AdminArtworks({ loggingOut, onLogout, onOpenProfile, onSessionEx
         </Stack>
       ) : (
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }, gap: 3 }}>
-          {artworks.map((artwork) => (
+          {artworks.map((artwork, index) => (
             <Box key={artwork.id} sx={{ border: '1px solid', borderColor: 'divider', bgcolor: 'rgba(255,255,255,.24)' }}>
               <Box sx={{ aspectRatio: '4 / 5', bgcolor: 'background.paper', display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
                 <Box component="img" src={artwork.imageUrl} alt={artwork.imageAlt || artwork.title} sx={{ width: '100%', height: '100%', objectFit: 'contain' }} />
@@ -165,11 +225,16 @@ export function AdminArtworks({ loggingOut, onLogout, onOpenProfile, onSessionEx
                       {[artwork.year, artwork.technique].filter(Boolean).join(' · ') || 'Без дополнительных сведений'}
                     </Typography>
                   </Box>
-                  <Chip size="small" variant="outlined" color={artwork.isPublished ? 'primary' : 'default'} label={artwork.isPublished ? 'Опубликовано' : 'Черновик'} />
+                  <Stack spacing={1} sx={{ alignItems: 'flex-end' }}>
+                    {artwork.id === featuredArtworkID && <Chip size="small" color="primary" label="Главная" />}
+                    <Chip size="small" variant="outlined" color={artwork.isPublished ? 'primary' : 'default'} label={artwork.isPublished ? 'Опубликовано' : 'Черновик'} />
+                  </Stack>
                 </Stack>
                 <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end' }}>
-                  <IconButton aria-label={`Редактировать «${artwork.title}»`} onClick={() => openEdit(artwork)}><EditOutlinedIcon /></IconButton>
-                  <IconButton aria-label={`Удалить «${artwork.title}»`} color="error" disabled={deletingID === artwork.id} onClick={() => void handleDelete(artwork)}>
+                  <IconButton aria-label={`Переместить «${artwork.title}» раньше`} disabled={index === 0 || savingOrder} onClick={() => moveArtwork(index, -1)}><ArrowUpwardOutlinedIcon /></IconButton>
+                  <IconButton aria-label={`Переместить «${artwork.title}» позже`} disabled={index === artworks.length - 1 || savingOrder} onClick={() => moveArtwork(index, 1)}><ArrowDownwardOutlinedIcon /></IconButton>
+                  <IconButton aria-label={`Редактировать «${artwork.title}»`} disabled={orderChanged || savingOrder} onClick={() => openEdit(artwork)}><EditOutlinedIcon /></IconButton>
+                  <IconButton aria-label={`Удалить «${artwork.title}»`} color="error" disabled={orderChanged || savingOrder || deletingID === artwork.id} onClick={() => void handleDelete(artwork)}>
                     {deletingID === artwork.id ? <CircularProgress size={20} /> : <DeleteOutlineIcon />}
                   </IconButton>
                 </Stack>
@@ -187,8 +252,9 @@ export function AdminArtworks({ loggingOut, onLogout, onOpenProfile, onSessionEx
       onSaved={(saved) => {
       setArtworks((items) => {
         const exists = items.some((item) => item.id === saved.id)
-        return exists ? items.map((item) => item.id === saved.id ? saved : item) : [saved, ...items]
+        return exists ? items.map((item) => item.id === saved.id ? saved : item) : [...items, saved]
       })
+      setSavedOrder((ids) => ids.includes(saved.id) ? ids : [...ids, saved.id])
       setEditor(null)
       }}
       onSessionExpired={onSessionExpired}
@@ -196,6 +262,10 @@ export function AdminArtworks({ loggingOut, onLogout, onOpenProfile, onSessionEx
     )}
     </Box>
   )
+}
+
+function sameOrder(left: number[], right: number[]): boolean {
+  return left.length === right.length && left.every((id, index) => id === right[index])
 }
 
 function ArtworkEditor({ state, onClose, onSaved, onSessionExpired }: {

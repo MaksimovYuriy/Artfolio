@@ -10,13 +10,12 @@ func TestArtworkFromValues(t *testing.T) {
 	request, err := ArtworkFromValues(url.Values{
 		"title":       {"Работа"},
 		"year":        {"2026"},
-		"position":    {"3"},
 		"isPublished": {"true"},
 	})
 	if err != nil {
 		t.Fatalf("ArtworkFromValues() error = %v", err)
 	}
-	if request.Year == nil || *request.Year != 2026 || request.Position != 3 || !request.IsPublished {
+	if request.Year == nil || *request.Year != 2026 || !request.IsPublished {
 		t.Fatalf("ArtworkFromValues() = %#v", request)
 	}
 }

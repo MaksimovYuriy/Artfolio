@@ -13,6 +13,7 @@ import (
 
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/v1/response"
 	"github.com/maksimovyuriy/artfolio/backend/internal/entity"
+	"github.com/maksimovyuriy/artfolio/backend/internal/usecase"
 )
 
 func TestArtworkControllerCreate(t *testing.T) {
@@ -91,14 +92,45 @@ func TestArtworkControllerListPublishedUsesPublicDTO(t *testing.T) {
 	}
 }
 
+func TestArtworkControllerReorder(t *testing.T) {
+	uc := &fakeArtworkUseCase{}
+	controller := testArtworkController(uc)
+	request := httptest.NewRequest(http.MethodPut, "/admin/artworks/order", strings.NewReader(`{"artworkIds":[3,1,2]}`))
+	response := httptest.NewRecorder()
+
+	controller.reorderArtworks(response, request)
+
+	if response.Code != http.StatusNoContent {
+		t.Fatalf("Reorder() status = %d, body = %q", response.Code, response.Body.String())
+	}
+	if len(uc.reordered) != 3 || uc.reordered[0] != 3 || uc.reordered[2] != 2 {
+		t.Fatalf("Reorder() ids = %v", uc.reordered)
+	}
+}
+
+func TestArtworkControllerReorderConflict(t *testing.T) {
+	uc := &fakeArtworkUseCase{reorderErr: usecase.ErrArtworkOrderConflict}
+	controller := testArtworkController(uc)
+	request := httptest.NewRequest(http.MethodPut, "/admin/artworks/order", strings.NewReader(`{"artworkIds":[1]}`))
+	response := httptest.NewRecorder()
+
+	controller.reorderArtworks(response, request)
+
+	if response.Code != http.StatusConflict {
+		t.Fatalf("Reorder() status = %d, want 409", response.Code)
+	}
+}
+
 func testArtworkController(uc *fakeArtworkUseCase) *Controller {
 	return NewController(nil, nil, uc, nil, response.NewArtworkMapper("/media"))
 }
 
 type fakeArtworkUseCase struct {
-	published []entity.Artwork
-	created   entity.Artwork
-	image     string
+	published  []entity.Artwork
+	created    entity.Artwork
+	image      string
+	reordered  []int64
+	reorderErr error
 }
 
 func (u *fakeArtworkUseCase) ListPublished(context.Context) ([]entity.Artwork, error) {
@@ -124,4 +156,9 @@ func (u *fakeArtworkUseCase) Update(context.Context, entity.Artwork, io.Reader) 
 
 func (u *fakeArtworkUseCase) Delete(context.Context, int64) error {
 	return nil
+}
+
+func (u *fakeArtworkUseCase) Reorder(_ context.Context, ids []int64) error {
+	u.reordered = ids
+	return u.reorderErr
 }

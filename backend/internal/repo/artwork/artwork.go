@@ -62,6 +62,19 @@ func (r *Repo) GetByID(ctx context.Context, id int64) (entity.Artwork, error) {
 }
 
 func (r *Repo) Create(ctx context.Context, artwork entity.Artwork) (entity.Artwork, error) {
+	tx, err := r.database.BeginTx(ctx, nil)
+	if err != nil {
+		return entity.Artwork{}, fmt.Errorf("begin artwork creation: %w", err)
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, "LOCK TABLE artworks IN SHARE ROW EXCLUSIVE MODE"); err != nil {
+		return entity.Artwork{}, fmt.Errorf("lock artworks for creation: %w", err)
+	}
+	if err := tx.QueryRowContext(ctx, "SELECT COALESCE(MAX(position) + 1, 0) FROM artworks").Scan(&artwork.Position); err != nil {
+		return entity.Artwork{}, fmt.Errorf("select next artwork position: %w", err)
+	}
+
 	const query = `
 		INSERT INTO artworks (
 			title, description, technique, year, image_key, image_alt, position, is_published
@@ -71,7 +84,7 @@ func (r *Repo) Create(ctx context.Context, artwork entity.Artwork) (entity.Artwo
 			position, is_published, created_at, updated_at
 	`
 
-	created, err := scanArtwork(r.database.QueryRowContext(
+	created, err := scanArtwork(tx.QueryRowContext(
 		ctx,
 		query,
 		artwork.Title,
@@ -85,6 +98,9 @@ func (r *Repo) Create(ctx context.Context, artwork entity.Artwork) (entity.Artwo
 	))
 	if err != nil {
 		return entity.Artwork{}, fmt.Errorf("create artwork: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return entity.Artwork{}, fmt.Errorf("commit artwork creation: %w", err)
 	}
 	return created, nil
 }
@@ -126,8 +142,7 @@ func (r *Repo) update(ctx context.Context, artwork entity.Artwork, updateImage b
 			technique = $4,
 			year = $5,
 			image_alt = $6,
-			position = $7,
-			is_published = $8,
+			is_published = $7,
 			updated_at = CURRENT_TIMESTAMP
 		WHERE id = $1
 	`
@@ -138,7 +153,6 @@ func (r *Repo) update(ctx context.Context, artwork entity.Artwork, updateImage b
 		artwork.Technique,
 		artwork.Year,
 		artwork.ImageAlt,
-		artwork.Position,
 		artwork.IsPublished,
 	}
 	if updateImage {
@@ -150,8 +164,7 @@ func (r *Repo) update(ctx context.Context, artwork entity.Artwork, updateImage b
 				year = $5,
 				image_key = $6,
 				image_alt = $7,
-				position = $8,
-				is_published = $9,
+				is_published = $8,
 				updated_at = CURRENT_TIMESTAMP
 			WHERE id = $1
 		`
@@ -163,7 +176,6 @@ func (r *Repo) update(ctx context.Context, artwork entity.Artwork, updateImage b
 			artwork.Year,
 			artwork.ImageKey,
 			artwork.ImageAlt,
-			artwork.Position,
 			artwork.IsPublished,
 		}
 	}
@@ -176,6 +188,54 @@ func (r *Repo) update(ctx context.Context, artwork entity.Artwork, updateImage b
 		return entity.Artwork{}, fmt.Errorf("commit artwork update: %w", err)
 	}
 	return previous, nil
+}
+
+func (r *Repo) Reorder(ctx context.Context, artworkIDs []int64) error {
+	tx, err := r.database.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin artwork reorder: %w", err)
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, "LOCK TABLE artworks IN SHARE ROW EXCLUSIVE MODE"); err != nil {
+		return fmt.Errorf("lock artworks for reorder: %w", err)
+	}
+
+	var count int
+	if err := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM artworks").Scan(&count); err != nil {
+		return fmt.Errorf("count artworks for reorder: %w", err)
+	}
+	if count != len(artworkIDs) {
+		return fmt.Errorf("reorder artwork count mismatch: %w", repo.ErrConflict)
+	}
+
+	const query = `
+		WITH desired_order AS (
+			SELECT id, ordinality - 1 AS position
+			FROM UNNEST($1::BIGINT[]) WITH ORDINALITY AS item(id, ordinality)
+		)
+		UPDATE artworks AS artwork
+		SET position = desired_order.position,
+			updated_at = CURRENT_TIMESTAMP
+		FROM desired_order
+		WHERE artwork.id = desired_order.id
+	`
+	result, err := tx.ExecContext(ctx, query, artworkIDs)
+	if err != nil {
+		return fmt.Errorf("reorder artworks: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("count reordered artworks: %w", err)
+	}
+	if affected != int64(len(artworkIDs)) {
+		return fmt.Errorf("reorder artwork ids mismatch: %w", repo.ErrConflict)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit artwork reorder: %w", err)
+	}
+	return nil
 }
 
 func (r *Repo) Delete(ctx context.Context, id int64) (entity.Artwork, error) {

@@ -110,6 +110,19 @@ func (c *Controller) deleteArtwork(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (c *Controller) reorderArtworks(w http.ResponseWriter, r *http.Request) {
+	var body request.ReorderArtworks
+	if err := jsonutil.Decode(w, r, &body); err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+	if err := c.artwork.Reorder(r.Context(), body.ArtworkIDs); err != nil {
+		writeArtworkError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (c *Controller) parseMultipart(w http.ResponseWriter, r *http.Request) (*multipart.Form, int, error) {
 	mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if err != nil || mediaType != "multipart/form-data" {
@@ -162,6 +175,8 @@ func writeArtworkError(w http.ResponseWriter, err error) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 	case errors.Is(err, entity.ErrValidation), errors.Is(err, usecase.ErrArtworkImageRequired):
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+	case errors.Is(err, usecase.ErrArtworkOrderConflict):
+		http.Error(w, http.StatusText(http.StatusConflict), http.StatusConflict)
 	case errors.Is(err, storage.ErrFileTooLarge):
 		http.Error(w, http.StatusText(http.StatusRequestEntityTooLarge), http.StatusRequestEntityTooLarge)
 	case errors.Is(err, storage.ErrInvalidImage):

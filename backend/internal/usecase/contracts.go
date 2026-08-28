@@ -11,6 +11,7 @@ import (
 var (
 	ErrArtworkNotFound      = errors.New("artwork not found")
 	ErrArtworkImageRequired = errors.New("artwork image is required")
+	ErrArtworkOrderConflict = errors.New("artwork order conflict")
 )
 
 type KeyCreator interface {
@@ -33,6 +34,7 @@ type ArtworkUseCase interface {
 	ListAll(ctx context.Context) ([]entity.Artwork, error)
 	Create(ctx context.Context, artwork entity.Artwork, image io.Reader) (entity.Artwork, error)
 	Update(ctx context.Context, artwork entity.Artwork, image io.Reader) error
+	Reorder(ctx context.Context, artworkIDs []int64) error
 	Delete(ctx context.Context, id int64) error
 }
 

@@ -1,11 +1,10 @@
 //go:build integration
 
-package v1
+package integrationtests
 
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"encoding/json"
 	"image"
 	"image/color"
@@ -21,22 +20,19 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
-	"github.com/go-chi/chi"
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/maksimovyuriy/artfolio/backend/internal/config"
+	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/middleware"
+	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/v1"
 	apiresponse "github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/v1/response"
+	"github.com/maksimovyuriy/artfolio/backend/internal/entity"
 	artworkstorage "github.com/maksimovyuriy/artfolio/backend/internal/lib/storage/artwork"
 	artworkrepo "github.com/maksimovyuriy/artfolio/backend/internal/repo/artwork"
 	artworkusecase "github.com/maksimovyuriy/artfolio/backend/internal/usecase/artwork"
-	"github.com/pressly/goose"
 )
 
-const integrationDatabaseURL = "postgres://artfolio_test:artfolio_test@127.0.0.1:55432/artfolio_test?sslmode=disable"
-
 func TestArtworkHTTPFlow(t *testing.T) {
-	database := openIntegrationDatabase(t)
+	database := openTestDatabase(t, "TRUNCATE artworks RESTART IDENTITY")
 	mediaRoot := t.TempDir()
 	storageConfig := config.StorageConfig{
 		Path:        mediaRoot,
@@ -51,12 +47,12 @@ func TestArtworkHTTPFlow(t *testing.T) {
 	repository := artworkrepo.NewRepo(database)
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 	uc := artworkusecase.NewUseCase(repository, files, log)
-	controller := NewController(nil, nil, uc, nil, apiresponse.NewArtworkMapper(storageConfig.PublicURL))
+	controller := v1.NewController(nil, nil, uc, nil, apiresponse.NewArtworkMapper(storageConfig.PublicURL))
+	router := v1.NewRouter(controller, middleware.NewAuth(validSessionUseCase{}), 2<<20)
 
-	created := createArtworkThroughHTTP(t, controller, jpegBytes(t), map[string]string{
+	created := createArtworkThroughHTTP(t, router, jpegBytes(t), map[string]string{
 		"title":       "Первая работа",
 		"year":        "2026",
-		"position":    "1",
 		"isPublished": "true",
 	})
 	oldKey := strings.TrimPrefix(created.ImageURL, "/media/")
@@ -64,7 +60,7 @@ func TestArtworkHTTPFlow(t *testing.T) {
 
 	t.Run("published list", func(t *testing.T) {
 		response := httptest.NewRecorder()
-		controller.listPublishedArtworks(response, httptest.NewRequest(http.MethodGet, "/artworks", nil))
+		router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/artworks", nil))
 		if response.Code != http.StatusOK {
 			t.Fatalf("ListPublished() status = %d, body = %q", response.Code, response.Body.String())
 		}
@@ -81,12 +77,11 @@ func TestArtworkHTTPFlow(t *testing.T) {
 		request := multipartRequest(t, http.MethodPut, "/admin/artworks/"+strconv.FormatInt(created.ID, 10), pngBytes(t), map[string]string{
 			"title":       "Обновлённая работа",
 			"year":        "2025",
-			"position":    "2",
 			"isPublished": "true",
 		})
-		request = withArtworkID(request, created.ID)
+		authorize(request)
 		response := httptest.NewRecorder()
-		controller.updateArtwork(response, request)
+		router.ServeHTTP(response, request)
 		if response.Code != http.StatusNoContent {
 			t.Fatalf("Update() status = %d, body = %q", response.Code, response.Body.String())
 		}
@@ -107,12 +102,10 @@ func TestArtworkHTTPFlow(t *testing.T) {
 
 	t.Run("delete artwork and image", func(t *testing.T) {
 		key := strings.TrimPrefix(created.ImageURL, "/media/")
-		request := withArtworkID(
-			httptest.NewRequest(http.MethodDelete, "/admin/artworks/"+strconv.FormatInt(created.ID, 10), nil),
-			created.ID,
-		)
+		request := httptest.NewRequest(http.MethodDelete, "/admin/artworks/"+strconv.FormatInt(created.ID, 10), nil)
+		authorize(request)
 		response := httptest.NewRecorder()
-		controller.deleteArtwork(response, request)
+		router.ServeHTTP(response, request)
 		if response.Code != http.StatusNoContent {
 			t.Fatalf("Delete() status = %d, body = %q", response.Code, response.Body.String())
 		}
@@ -126,11 +119,12 @@ func TestArtworkHTTPFlow(t *testing.T) {
 	})
 }
 
-func createArtworkThroughHTTP(t *testing.T, controller *Controller, content []byte, fields map[string]string) apiresponse.AdminArtwork {
+func createArtworkThroughHTTP(t *testing.T, router http.Handler, content []byte, fields map[string]string) apiresponse.AdminArtwork {
 	t.Helper()
 	request := multipartRequest(t, http.MethodPost, "/admin/artworks", content, fields)
+	authorize(request)
 	response := httptest.NewRecorder()
-	controller.createArtwork(response, request)
+	router.ServeHTTP(response, request)
 	if response.Code != http.StatusCreated {
 		t.Fatalf("Create() status = %d, body = %q", response.Code, response.Body.String())
 	}
@@ -165,53 +159,8 @@ func multipartRequest(t *testing.T, method, target string, content []byte, field
 	return request
 }
 
-func withArtworkID(request *http.Request, id int64) *http.Request {
-	routeContext := chi.NewRouteContext()
-	routeContext.URLParams.Add("id", strconv.FormatInt(id, 10))
-	return request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, routeContext))
-}
-
-func openIntegrationDatabase(t *testing.T) *sql.DB {
-	t.Helper()
-	databaseURL := os.Getenv("ARTFOLIO_TEST_DATABASE_URL")
-	if databaseURL == "" {
-		databaseURL = integrationDatabaseURL
-	}
-	database, err := sql.Open("pgx", databaseURL)
-	if err != nil {
-		t.Fatalf("open integration database: %v", err)
-	}
-	t.Cleanup(func() { _ = database.Close() })
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	if err := database.PingContext(ctx); err != nil {
-		t.Fatalf("connect to integration database: %v", err)
-	}
-	lockConnection, err := database.Conn(ctx)
-	if err != nil {
-		t.Fatalf("reserve integration connection: %v", err)
-	}
-	if _, err := lockConnection.ExecContext(ctx, "SELECT pg_advisory_lock(91724001)"); err != nil {
-		_ = lockConnection.Close()
-		t.Fatalf("lock integration database: %v", err)
-	}
-	t.Cleanup(func() {
-		_, _ = lockConnection.ExecContext(context.Background(), "SELECT pg_advisory_unlock(91724001)")
-		_ = lockConnection.Close()
-	})
-
-	if err := goose.SetDialect("postgres"); err != nil {
-		t.Fatalf("set migration dialect: %v", err)
-	}
-	migrations := filepath.Join("..", "..", "..", "..", "migrations")
-	if err := goose.Up(database, migrations); err != nil {
-		t.Fatalf("apply migrations: %v", err)
-	}
-	if _, err := database.ExecContext(ctx, "TRUNCATE artworks RESTART IDENTITY"); err != nil {
-		t.Fatalf("truncate artworks: %v", err)
-	}
-	return database
+func authorize(request *http.Request) {
+	request.AddCookie(&http.Cookie{Name: middleware.SessionCookieName, Value: "integration-test"})
 }
 
 func jpegBytes(t *testing.T) []byte {
@@ -246,4 +195,18 @@ func assertFileExists(t *testing.T, root, key string) {
 	if info.IsDir() {
 		t.Fatalf("stored image %q is a directory", key)
 	}
+}
+
+type validSessionUseCase struct{}
+
+func (validSessionUseCase) Create(context.Context, string) (entity.Session, error) {
+	return entity.Session{}, nil
+}
+
+func (validSessionUseCase) Verify(context.Context, string) (bool, error) {
+	return true, nil
+}
+
+func (validSessionUseCase) Revoke(context.Context, string) error {
+	return nil
 }

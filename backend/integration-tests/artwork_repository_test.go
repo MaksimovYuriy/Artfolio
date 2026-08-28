@@ -1,27 +1,20 @@
 //go:build integration
 
-package artwork
+package integrationtests
 
 import (
 	"context"
-	"database/sql"
 	"errors"
-	"os"
-	"path/filepath"
 	"testing"
-	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/maksimovyuriy/artfolio/backend/internal/entity"
 	"github.com/maksimovyuriy/artfolio/backend/internal/repo"
-	"github.com/pressly/goose"
+	artworkrepo "github.com/maksimovyuriy/artfolio/backend/internal/repo/artwork"
 )
 
-const defaultTestDatabaseURL = "postgres://artfolio_test:artfolio_test@127.0.0.1:55432/artfolio_test?sslmode=disable"
-
 func TestArtworkRepository(t *testing.T) {
-	database := openTestDatabase(t)
-	repository := NewRepo(database)
+	database := openTestDatabase(t, "TRUNCATE artworks RESTART IDENTITY")
+	repository := artworkrepo.NewRepo(database)
 	ctx := context.Background()
 
 	draft := createArtwork(t, ctx, repository, entity.Artwork{
@@ -49,7 +42,7 @@ func TestArtworkRepository(t *testing.T) {
 		if err != nil {
 			t.Fatalf("ListPublished() error = %v", err)
 		}
-		if len(artworks) != 2 || artworks[0].ID != second.ID || artworks[1].ID != first.ID {
+		if len(artworks) != 2 || artworks[0].ID != first.ID || artworks[1].ID != second.ID {
 			t.Fatalf("ListPublished() = %#v", artworks)
 		}
 	})
@@ -59,8 +52,24 @@ func TestArtworkRepository(t *testing.T) {
 		if err != nil {
 			t.Fatalf("ListAll() error = %v", err)
 		}
-		if len(artworks) != 3 || artworks[2].ID != draft.ID {
+		if len(artworks) != 3 || artworks[0].ID != draft.ID {
 			t.Fatalf("ListAll() = %#v", artworks)
+		}
+	})
+
+	t.Run("reorder all artworks", func(t *testing.T) {
+		if err := repository.Reorder(ctx, []int64{second.ID, draft.ID, first.ID}); err != nil {
+			t.Fatalf("Reorder() error = %v", err)
+		}
+		artworks, err := repository.ListAll(ctx)
+		if err != nil {
+			t.Fatalf("ListAll() after reorder error = %v", err)
+		}
+		if len(artworks) != 3 || artworks[0].ID != second.ID || artworks[1].ID != draft.ID || artworks[2].ID != first.ID {
+			t.Fatalf("ListAll() after reorder = %#v", artworks)
+		}
+		if err := repository.Reorder(ctx, []int64{second.ID, draft.ID, 999999}); !errors.Is(err, repo.ErrConflict) {
+			t.Fatalf("Reorder() missing id error = %v, want repo.ErrConflict", err)
 		}
 	})
 
@@ -122,49 +131,7 @@ func TestArtworkRepository(t *testing.T) {
 	})
 }
 
-func openTestDatabase(t *testing.T) *sql.DB {
-	t.Helper()
-	databaseURL := os.Getenv("ARTFOLIO_TEST_DATABASE_URL")
-	if databaseURL == "" {
-		databaseURL = defaultTestDatabaseURL
-	}
-	database, err := sql.Open("pgx", databaseURL)
-	if err != nil {
-		t.Fatalf("open test database: %v", err)
-	}
-	t.Cleanup(func() { _ = database.Close() })
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	if err := database.PingContext(ctx); err != nil {
-		t.Fatalf("connect to test database: %v", err)
-	}
-	lockConnection, err := database.Conn(ctx)
-	if err != nil {
-		t.Fatalf("reserve integration test connection: %v", err)
-	}
-	if _, err := lockConnection.ExecContext(ctx, "SELECT pg_advisory_lock(91724001)"); err != nil {
-		_ = lockConnection.Close()
-		t.Fatalf("lock integration database: %v", err)
-	}
-	t.Cleanup(func() {
-		_, _ = lockConnection.ExecContext(context.Background(), "SELECT pg_advisory_unlock(91724001)")
-		_ = lockConnection.Close()
-	})
-	if err := goose.SetDialect("postgres"); err != nil {
-		t.Fatalf("set migration dialect: %v", err)
-	}
-	migrations := filepath.Join("..", "..", "..", "migrations")
-	if err := goose.Up(database, migrations); err != nil {
-		t.Fatalf("apply migrations: %v", err)
-	}
-	if _, err := database.ExecContext(ctx, "TRUNCATE artworks RESTART IDENTITY"); err != nil {
-		t.Fatalf("truncate artworks: %v", err)
-	}
-	return database
-}
-
-func createArtwork(t *testing.T, ctx context.Context, repository *Repo, artwork entity.Artwork) entity.Artwork {
+func createArtwork(t *testing.T, ctx context.Context, repository *artworkrepo.Repo, artwork entity.Artwork) entity.Artwork {
 	t.Helper()
 	created, err := repository.Create(ctx, artwork)
 	if err != nil {
