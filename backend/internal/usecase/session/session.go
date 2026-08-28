@@ -33,6 +33,9 @@ func (uc *UseCase) Create(ctx context.Context, accessKey string) (entity.Session
 	accessKeyHash := sha256.Sum256([]byte(accessKey))
 
 	adminKeyID, err := uc.keyRepo.Find(ctx, accessKeyHash[:])
+	if errors.Is(err, repo.ErrNotFound) {
+		return entity.Session{}, usecase.ErrInvalidSession
+	}
 	if err != nil {
 		return entity.Session{}, err
 	}
@@ -46,43 +49,33 @@ func (uc *UseCase) Create(ctx context.Context, accessKey string) (entity.Session
 	tokenHash := sha256.Sum256([]byte(token))
 	expiresAt := time.Now().Add(sessionTTL)
 
-	sessionID, err := uc.sessionRepo.Create(ctx, adminKeyID, tokenHash[:], expiresAt)
-	if err != nil {
+	if err := uc.sessionRepo.Create(ctx, adminKeyID, tokenHash[:], expiresAt); err != nil {
 		return entity.Session{}, err
 	}
 
 	return entity.Session{
-		ID:        sessionID,
-		ActorID:   adminKeyID,
 		Token:     token,
 		ExpiresAt: expiresAt,
 	}, nil
 }
 
-func (uc *UseCase) Authenticate(ctx context.Context, token string) (entity.AuthenticatedSession, error) {
+func (uc *UseCase) Verify(ctx context.Context, token string) (bool, error) {
 	tokenHash := sha256.Sum256([]byte(token))
 
-	session, err := uc.sessionRepo.FindActive(ctx, tokenHash[:], time.Now())
-	if errors.Is(err, repo.ErrNotFound) {
-		return entity.AuthenticatedSession{}, usecase.ErrInvalidSession
-	}
+	exists, err := uc.sessionRepo.ExistsActive(ctx, tokenHash[:], time.Now())
 	if err != nil {
-		return entity.AuthenticatedSession{}, err
+		return false, err
 	}
 
-	return session, nil
+	return exists, nil
 }
 
-func (uc *UseCase) Revoke(ctx context.Context, token string) (entity.AuthenticatedSession, error) {
+func (uc *UseCase) Revoke(ctx context.Context, token string) error {
 	tokenHash := sha256.Sum256([]byte(token))
 
-	session, err := uc.sessionRepo.Revoke(ctx, tokenHash[:], time.Now())
-	if errors.Is(err, repo.ErrNotFound) {
-		return entity.AuthenticatedSession{}, usecase.ErrInvalidSession
-	}
-	if err != nil {
-		return entity.AuthenticatedSession{}, err
+	if err := uc.sessionRepo.Revoke(ctx, tokenHash[:], time.Now()); err != nil {
+		return err
 	}
 
-	return session, nil
+	return nil
 }

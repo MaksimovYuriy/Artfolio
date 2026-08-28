@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
@@ -12,18 +11,10 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/apierror"
 )
 
 const RequestIDHeader = "X-Request-ID"
-
-type requestStateKey struct{}
-
-type requestState struct {
-	id        string
-	actorID   int64
-	sessionID int64
-	err       error
-}
 
 type responseRecorder struct {
 	http.ResponseWriter
@@ -48,42 +39,25 @@ func (w *responseRecorder) Write(body []byte) (int, error) {
 	return n, err
 }
 
-// RecordError attaches an internal error to the current request. It is logged by
-// RequestLogger without exposing its details in the HTTP response.
-func RecordError(ctx context.Context, err error) {
-	if state, ok := ctx.Value(requestStateKey{}).(*requestState); ok {
-		state.err = err
-	}
-}
-
-// RecordAuthentication adds non-sensitive authentication identifiers to the
-// request log. Tokens and cookies must never be passed here.
-func RecordAuthentication(ctx context.Context, actorID, sessionID int64) {
-	if state, ok := ctx.Value(requestStateKey{}).(*requestState); ok {
-		state.actorID = actorID
-		state.sessionID = sessionID
-	}
-}
-
 func RequestLogger(log *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			started := time.Now()
-			state := &requestState{id: requestID(r)}
-			r = r.WithContext(context.WithValue(r.Context(), requestStateKey{}, state))
-			w.Header().Set(RequestIDHeader, state.id)
+			requestID := requestID(r)
+			r.Header.Set(RequestIDHeader, requestID)
+			w.Header().Set(RequestIDHeader, requestID)
 			recorder := &responseRecorder{ResponseWriter: w}
 
 			defer func() {
 				if recovered := recover(); recovered != nil {
-					state.err = fmt.Errorf("panic: %v", recovered)
+					panicErr := fmt.Errorf("panic: %v", recovered)
 					log.Error("HTTP handler panicked",
-						slog.String("request_id", state.id),
+						slog.String("request_id", requestID),
 						slog.Any("panic", recovered),
 						slog.String("stack", string(debug.Stack())),
 					)
 					if recorder.status == 0 {
-						http.Error(recorder, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+						apierror.Write(recorder, r, panicErr)
 					}
 				}
 
@@ -92,7 +66,7 @@ func RequestLogger(log *slog.Logger) func(http.Handler) http.Handler {
 					status = http.StatusOK
 				}
 				attrs := []any{
-					slog.String("request_id", state.id),
+					slog.String("request_id", requestID),
 					slog.String("method", r.Method),
 					slog.String("path", r.URL.Path),
 					slog.Int("status", status),
@@ -104,16 +78,6 @@ func RequestLogger(log *slog.Logger) func(http.Handler) http.Handler {
 						attrs = append(attrs, slog.String("route", pattern))
 					}
 				}
-				if state.err != nil {
-					attrs = append(attrs, slog.Any("error", state.err))
-				}
-				if state.actorID > 0 {
-					attrs = append(attrs, slog.Int64("actor_id", state.actorID))
-				}
-				if state.sessionID > 0 {
-					attrs = append(attrs, slog.Int64("session_id", state.sessionID))
-				}
-
 				switch {
 				case status >= http.StatusInternalServerError:
 					log.Error("HTTP request completed", attrs...)

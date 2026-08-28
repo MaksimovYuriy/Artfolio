@@ -119,6 +119,17 @@ func TestArtworkControllerReorderConflict(t *testing.T) {
 	if response.Code != http.StatusConflict {
 		t.Fatalf("Reorder() status = %d, want 409", response.Code)
 	}
+	var payload struct {
+		Error struct {
+			Code string `json:"code"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode error response: %v", err)
+	}
+	if payload.Error.Code != "artwork_order_conflict" {
+		t.Fatalf("error code = %q, want artwork_order_conflict", payload.Error.Code)
+	}
 }
 
 func testArtworkController(uc *fakeArtworkUseCase) *Controller {

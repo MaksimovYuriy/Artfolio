@@ -8,15 +8,18 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/apierror"
 )
 
 func TestRequestLoggerRecordsRequest(t *testing.T) {
 	var output bytes.Buffer
 	log := slog.New(slog.NewJSONHandler(&output, nil))
+	previousLog := slog.Default()
+	slog.SetDefault(log)
+	t.Cleanup(func() { slog.SetDefault(previousLog) })
 	handler := RequestLogger(log)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		RecordAuthentication(r.Context(), 42, 73)
-		RecordError(r.Context(), errors.New("database unavailable"))
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		apierror.Write(w, r, errors.New("database unavailable"))
 	}))
 
 	response := httptest.NewRecorder()
@@ -30,7 +33,7 @@ func TestRequestLoggerRecordsRequest(t *testing.T) {
 	for _, expected := range []string{
 		`"level":"ERROR"`, `"request_id":"request-123"`,
 		`"method":"GET"`, `"path":"/artworks"`, `"status":500`,
-		`"error":"database unavailable"`, `"actor_id":42`, `"session_id":73`,
+		`"error":"database unavailable"`,
 	} {
 		if !strings.Contains(output.String(), expected) {
 			t.Errorf("log does not contain %s: %s", expected, output.String())

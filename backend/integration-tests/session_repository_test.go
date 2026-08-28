@@ -5,11 +5,9 @@ package integrationtests
 import (
 	"bytes"
 	"context"
-	"errors"
 	"testing"
 	"time"
 
-	"github.com/maksimovyuriy/artfolio/backend/internal/repo"
 	sessionrepo "github.com/maksimovyuriy/artfolio/backend/internal/repo/session"
 )
 
@@ -17,38 +15,36 @@ func TestSessionRepositoryLifecycle(t *testing.T) {
 	database := openTestDatabase(t, "TRUNCATE admin_sessions, admin_keys RESTART IDENTITY CASCADE")
 	ctx := context.Background()
 	keyHash := bytes.Repeat([]byte{1}, 32)
-	var actorID int64
+	var adminKeyID int64
 	if err := database.QueryRowContext(ctx,
 		"INSERT INTO admin_keys (key_hash) VALUES ($1) RETURNING id",
 		keyHash,
-	).Scan(&actorID); err != nil {
+	).Scan(&adminKeyID); err != nil {
 		t.Fatalf("create admin key: %v", err)
 	}
 
 	repository := sessionrepo.NewRepo(database)
 	tokenHash := bytes.Repeat([]byte{2}, 32)
-	sessionID, err := repository.Create(ctx, actorID, tokenHash, time.Now().Add(time.Hour))
-	if err != nil {
+	if err := repository.Create(ctx, adminKeyID, tokenHash, time.Now().Add(time.Hour)); err != nil {
 		t.Fatalf("create session: %v", err)
 	}
 
-	authenticated, err := repository.FindActive(ctx, tokenHash, time.Now())
+	active, err := repository.ExistsActive(ctx, tokenHash, time.Now())
 	if err != nil {
-		t.Fatalf("find active session: %v", err)
+		t.Fatalf("check active session: %v", err)
 	}
-	if authenticated.ID != sessionID || authenticated.ActorID != actorID {
-		t.Fatalf("authenticated session = %+v, want ID %d and actor ID %d", authenticated, sessionID, actorID)
+	if !active {
+		t.Fatal("new session is not active")
 	}
 
-	revoked, err := repository.Revoke(ctx, tokenHash, time.Now())
-	if err != nil {
+	if err := repository.Revoke(ctx, tokenHash, time.Now()); err != nil {
 		t.Fatalf("revoke session: %v", err)
 	}
-	if revoked != authenticated {
-		t.Fatalf("revoked session = %+v, want %+v", revoked, authenticated)
+	active, err = repository.ExistsActive(ctx, tokenHash, time.Now())
+	if err != nil {
+		t.Fatalf("check revoked session: %v", err)
 	}
-
-	if _, err := repository.FindActive(ctx, tokenHash, time.Now()); !errors.Is(err, repo.ErrNotFound) {
-		t.Fatalf("find revoked session error = %v, want repository not found", err)
+	if active {
+		t.Fatal("revoked session is still active")
 	}
 }

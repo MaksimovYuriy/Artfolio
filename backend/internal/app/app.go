@@ -64,6 +64,7 @@ func Run() error {
 	}
 
 	log := logger.New(appCfg.App.Env)
+	slog.SetDefault(log)
 	log.Info("Logger started")
 
 	database, err := postgres.New(appCfg.DB)

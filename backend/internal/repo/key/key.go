@@ -3,6 +3,7 @@ package key
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/maksimovyuriy/artfolio/backend/internal/repo"
@@ -41,6 +42,9 @@ func (r *Repo) Find(ctx context.Context, keyHash []byte) (int64, error) {
 
 	var id int64
 	if err := r.database.QueryRowContext(ctx, query, keyHash).Scan(&id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, repo.ErrNotFound
+		}
 		return 0, fmt.Errorf("find admin key: %w", err)
 	}
 

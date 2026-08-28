@@ -24,19 +24,19 @@ type SessionRepository interface {
 		adminKeyID int64,
 		tokenHash []byte,
 		expiresAt time.Time,
-	) (int64, error)
+	) error
 
-	FindActive(
+	ExistsActive(
 		ctx context.Context,
 		tokenHash []byte,
 		now time.Time,
-	) (entity.AuthenticatedSession, error)
+	) (bool, error)
 
 	Revoke(
 		ctx context.Context,
 		tokenHash []byte,
 		revokedAt time.Time,
-	) (entity.AuthenticatedSession, error)
+	) error
 }
 
 type ArtistProfileRepository interface {

@@ -2,6 +2,7 @@ package restapi
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
@@ -37,6 +38,19 @@ func TestRouterVersioningAndHealth(t *testing.T) {
 		if response.Code != test.want {
 			t.Errorf("GET %s status = %d, want %d", test.path, response.Code, test.want)
 		}
+		if test.want == http.StatusNotFound {
+			var payload struct {
+				Error struct {
+					Code string `json:"code"`
+				} `json:"error"`
+			}
+			if err := json.Unmarshal(response.Body.Bytes(), &payload); err != nil {
+				t.Fatalf("decode not found response: %v", err)
+			}
+			if payload.Error.Code != "not_found" {
+				t.Fatalf("not found error code = %q", payload.Error.Code)
+			}
+		}
 	}
 }
 
@@ -56,10 +70,10 @@ func (*routerSessionUseCase) Create(context.Context, string) (entity.Session, er
 	return entity.Session{}, nil
 }
 
-func (*routerSessionUseCase) Authenticate(context.Context, string) (entity.AuthenticatedSession, error) {
-	return entity.AuthenticatedSession{ID: 1, ActorID: 1}, nil
+func (*routerSessionUseCase) Verify(context.Context, string) (bool, error) {
+	return true, nil
 }
 
-func (*routerSessionUseCase) Revoke(context.Context, string) (entity.AuthenticatedSession, error) {
-	return entity.AuthenticatedSession{ID: 1, ActorID: 1}, nil
+func (*routerSessionUseCase) Revoke(context.Context, string) error {
+	return nil
 }
