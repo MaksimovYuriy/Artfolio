@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/jsonutil"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/middleware"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/v1/request"
+	"github.com/maksimovyuriy/artfolio/backend/internal/usecase"
 )
 
 func (c *Controller) createSession(w http.ResponseWriter, r *http.Request) {
@@ -28,6 +30,7 @@ func (c *Controller) createSession(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
+	middleware.RecordAuthentication(r.Context(), adminSession.ActorID, adminSession.ID)
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     middleware.SessionCookieName,
@@ -49,15 +52,16 @@ func (c *Controller) verifySession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	valid, err := c.session.Verify(r.Context(), cookie.Value)
-	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-	if !valid {
+	adminSession, err := c.session.Authenticate(r.Context(), cookie.Value)
+	if errors.Is(err, usecase.ErrInvalidSession) {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
+	if err != nil {
+		writeInternalError(w, r, err)
+		return
+	}
+	middleware.RecordAuthentication(r.Context(), adminSession.ActorID, adminSession.ID)
 
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -65,9 +69,13 @@ func (c *Controller) verifySession(w http.ResponseWriter, r *http.Request) {
 func (c *Controller) revokeSession(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(middleware.SessionCookieName)
 	if err == nil {
-		if err := c.session.Revoke(r.Context(), cookie.Value); err != nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		adminSession, err := c.session.Revoke(r.Context(), cookie.Value)
+		if err != nil && !errors.Is(err, usecase.ErrInvalidSession) {
+			writeInternalError(w, r, err)
 			return
+		}
+		if err == nil {
+			middleware.RecordAuthentication(r.Context(), adminSession.ActorID, adminSession.ID)
 		}
 	}
 

@@ -1,6 +1,7 @@
 package restapi
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -12,8 +13,10 @@ func NewRouter(
 	controller *v1.Controller,
 	authMiddleware *middleware.Auth,
 	maxUploadBodySize int64,
+	log *slog.Logger,
 ) http.Handler {
 	r := chi.NewRouter()
+	r.Use(middleware.RequestLogger(log))
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/maksimovyuriy/artfolio/backend/internal/usecase"
@@ -24,8 +25,13 @@ func (a *Auth) VerifySession(next http.Handler) http.Handler {
 			return
 		}
 
-		valid, err := a.usecase.Verify(r.Context(), cookie.Value)
+		session, err := a.usecase.Authenticate(r.Context(), cookie.Value)
+		if errors.Is(err, usecase.ErrInvalidSession) {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
 		if err != nil {
+			RecordError(r.Context(), err)
 			http.Error(
 				w,
 				http.StatusText(http.StatusInternalServerError),
@@ -33,10 +39,7 @@ func (a *Auth) VerifySession(next http.Handler) http.Handler {
 			)
 			return
 		}
-		if !valid {
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-			return
-		}
+		RecordAuthentication(r.Context(), session.ActorID, session.ID)
 
 		next.ServeHTTP(w, r)
 	})

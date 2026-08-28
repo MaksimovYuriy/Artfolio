@@ -12,6 +12,7 @@ var (
 	ErrArtworkNotFound      = errors.New("artwork not found")
 	ErrArtworkImageRequired = errors.New("artwork image is required")
 	ErrArtworkOrderConflict = errors.New("artwork order conflict")
+	ErrInvalidSession       = errors.New("invalid session")
 )
 
 type KeyCreator interface {
@@ -20,8 +21,8 @@ type KeyCreator interface {
 
 type SessionUseCase interface {
 	Create(ctx context.Context, accessKey string) (entity.Session, error)
-	Verify(ctx context.Context, token string) (bool, error)
-	Revoke(ctx context.Context, token string) error
+	Authenticate(ctx context.Context, token string) (entity.AuthenticatedSession, error)
+	Revoke(ctx context.Context, token string) (entity.AuthenticatedSession, error)
 }
 
 type ArtistProfileUseCase interface {

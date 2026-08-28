@@ -81,7 +81,7 @@ func Run() error {
 
 	repositories := initRepositories(database)
 	useCases := initUseCases(repositories, artworkStorage, log)
-	servers := initServers(appCfg, useCases)
+	servers := initServers(appCfg, useCases, log)
 
 	apiErrors := make(chan error, 1)
 	go func() {
@@ -126,7 +126,7 @@ func initUseCases(repositories repositories, artworkStorage storage.Artwork, log
 	}
 }
 
-func initServers(appCfg *config.Config, useCases useCases) servers {
+func initServers(appCfg *config.Config, useCases useCases, log *slog.Logger) servers {
 	artworkMapper := response.NewArtworkMapper(appCfg.Storage.PublicURL)
 	controller := v1.NewController(
 		useCases.session,
@@ -137,7 +137,7 @@ func initServers(appCfg *config.Config, useCases useCases) servers {
 	)
 	authMiddleware := middleware.NewAuth(useCases.session)
 	maxUploadBodySize := appCfg.Storage.MaxFileSize + multipartFormOverheadAllowance
-	router := restapi.NewRouter(controller, authMiddleware, maxUploadBodySize)
+	router := restapi.NewRouter(controller, authMiddleware, maxUploadBodySize, log)
 
-	return servers{api: restapi.NewServer(appCfg.HTTP, router)}
+	return servers{api: restapi.NewServer(appCfg.HTTP, router, log)}
 }

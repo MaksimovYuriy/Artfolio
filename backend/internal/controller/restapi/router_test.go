@@ -2,6 +2,8 @@ package restapi
 
 import (
 	"context"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -16,7 +18,8 @@ func TestRouterVersioningAndHealth(t *testing.T) {
 	artistProfile := &routerArtistProfileUseCase{}
 	session := &routerSessionUseCase{}
 	controller := v1.NewController(session, artistProfile, nil, nil, response.NewArtworkMapper("/media"))
-	router := NewRouter(controller, middleware.NewAuth(session), 1<<20)
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+	router := NewRouter(controller, middleware.NewAuth(session), 1<<20, log)
 
 	tests := []struct {
 		path string
@@ -53,10 +56,10 @@ func (*routerSessionUseCase) Create(context.Context, string) (entity.Session, er
 	return entity.Session{}, nil
 }
 
-func (*routerSessionUseCase) Verify(context.Context, string) (bool, error) {
-	return true, nil
+func (*routerSessionUseCase) Authenticate(context.Context, string) (entity.AuthenticatedSession, error) {
+	return entity.AuthenticatedSession{ID: 1, ActorID: 1}, nil
 }
 
-func (*routerSessionUseCase) Revoke(context.Context, string) error {
-	return nil
+func (*routerSessionUseCase) Revoke(context.Context, string) (entity.AuthenticatedSession, error) {
+	return entity.AuthenticatedSession{ID: 1, ActorID: 1}, nil
 }

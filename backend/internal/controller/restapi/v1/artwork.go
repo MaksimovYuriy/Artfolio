@@ -20,7 +20,7 @@ const multipartMemoryLimit = 1 << 20
 func (c *Controller) listPublishedArtworks(w http.ResponseWriter, r *http.Request) {
 	artworks, err := c.artwork.ListPublished(r.Context())
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		writeInternalError(w, r, err)
 		return
 	}
 	_ = jsonutil.Encode(w, http.StatusOK, c.artworkMapper.FromEntities(artworks))
@@ -29,7 +29,7 @@ func (c *Controller) listPublishedArtworks(w http.ResponseWriter, r *http.Reques
 func (c *Controller) listAllArtworks(w http.ResponseWriter, r *http.Request) {
 	artworks, err := c.artwork.ListAll(r.Context())
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		writeInternalError(w, r, err)
 		return
 	}
 	_ = jsonutil.Encode(w, http.StatusOK, c.artworkMapper.AdminFromEntities(artworks))
@@ -57,7 +57,7 @@ func (c *Controller) createArtwork(w http.ResponseWriter, r *http.Request) {
 
 	created, err := c.artwork.Create(r.Context(), body.Artwork(0), image)
 	if err != nil {
-		writeArtworkError(w, err)
+		writeArtworkError(w, r, err)
 		return
 	}
 	_ = jsonutil.Encode(w, http.StatusCreated, c.artworkMapper.AdminFromEntity(created))
@@ -91,7 +91,7 @@ func (c *Controller) updateArtwork(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := c.artwork.Update(r.Context(), body.Artwork(id), image); err != nil {
-		writeArtworkError(w, err)
+		writeArtworkError(w, r, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -104,7 +104,7 @@ func (c *Controller) deleteArtwork(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := c.artwork.Delete(r.Context(), id); err != nil {
-		writeArtworkError(w, err)
+		writeArtworkError(w, r, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -117,7 +117,7 @@ func (c *Controller) reorderArtworks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := c.artwork.Reorder(r.Context(), body.ArtworkIDs); err != nil {
-		writeArtworkError(w, err)
+		writeArtworkError(w, r, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -169,7 +169,7 @@ func artworkID(r *http.Request) (int64, error) {
 	return id, nil
 }
 
-func writeArtworkError(w http.ResponseWriter, err error) {
+func writeArtworkError(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
 	case errors.Is(err, usecase.ErrArtworkNotFound):
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
@@ -184,6 +184,6 @@ func writeArtworkError(w http.ResponseWriter, err error) {
 	case errors.Is(err, storage.ErrImageTooManyPixels):
 		http.Error(w, http.StatusText(http.StatusUnprocessableEntity), http.StatusUnprocessableEntity)
 	default:
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		writeInternalError(w, r, err)
 	}
 }

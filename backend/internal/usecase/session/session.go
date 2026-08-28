@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"time"
 
 	"github.com/maksimovyuriy/artfolio/backend/internal/entity"
@@ -45,33 +46,43 @@ func (uc *UseCase) Create(ctx context.Context, accessKey string) (entity.Session
 	tokenHash := sha256.Sum256([]byte(token))
 	expiresAt := time.Now().Add(sessionTTL)
 
-	if err := uc.sessionRepo.Create(ctx, adminKeyID, tokenHash[:], expiresAt); err != nil {
+	sessionID, err := uc.sessionRepo.Create(ctx, adminKeyID, tokenHash[:], expiresAt)
+	if err != nil {
 		return entity.Session{}, err
 	}
 
 	return entity.Session{
+		ID:        sessionID,
+		ActorID:   adminKeyID,
 		Token:     token,
 		ExpiresAt: expiresAt,
 	}, nil
 }
 
-func (uc *UseCase) Verify(ctx context.Context, token string) (bool, error) {
+func (uc *UseCase) Authenticate(ctx context.Context, token string) (entity.AuthenticatedSession, error) {
 	tokenHash := sha256.Sum256([]byte(token))
 
-	exists, err := uc.sessionRepo.ExistsActive(ctx, tokenHash[:], time.Now())
+	session, err := uc.sessionRepo.FindActive(ctx, tokenHash[:], time.Now())
+	if errors.Is(err, repo.ErrNotFound) {
+		return entity.AuthenticatedSession{}, usecase.ErrInvalidSession
+	}
 	if err != nil {
-		return false, err
+		return entity.AuthenticatedSession{}, err
 	}
 
-	return exists, nil
+	return session, nil
 }
 
-func (uc *UseCase) Revoke(ctx context.Context, token string) error {
+func (uc *UseCase) Revoke(ctx context.Context, token string) (entity.AuthenticatedSession, error) {
 	tokenHash := sha256.Sum256([]byte(token))
 
-	if err := uc.sessionRepo.Revoke(ctx, tokenHash[:], time.Now()); err != nil {
-		return err
+	session, err := uc.sessionRepo.Revoke(ctx, tokenHash[:], time.Now())
+	if errors.Is(err, repo.ErrNotFound) {
+		return entity.AuthenticatedSession{}, usecase.ErrInvalidSession
+	}
+	if err != nil {
+		return entity.AuthenticatedSession{}, err
 	}
 
-	return nil
+	return session, nil
 }

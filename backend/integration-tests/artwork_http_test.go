@@ -203,10 +203,10 @@ func (validSessionUseCase) Create(context.Context, string) (entity.Session, erro
 	return entity.Session{}, nil
 }
 
-func (validSessionUseCase) Verify(context.Context, string) (bool, error) {
-	return true, nil
+func (validSessionUseCase) Authenticate(context.Context, string) (entity.AuthenticatedSession, error) {
+	return entity.AuthenticatedSession{ID: 22, ActorID: 11}, nil
 }
 
-func (validSessionUseCase) Revoke(context.Context, string) error {
-	return nil
+func (validSessionUseCase) Revoke(context.Context, string) (entity.AuthenticatedSession, error) {
+	return entity.AuthenticatedSession{ID: 22, ActorID: 11}, nil
 }

@@ -18,7 +18,7 @@ func (c *Controller) getArtistProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		writeInternalError(w, r, err)
 		return
 	}
 
@@ -38,7 +38,7 @@ func (c *Controller) updateArtistProfile(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		writeInternalError(w, r, err)
 		return
 	}
 

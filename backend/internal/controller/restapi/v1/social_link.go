@@ -13,7 +13,7 @@ import (
 func (c *Controller) listSocialLinks(w http.ResponseWriter, r *http.Request) {
 	links, err := c.socialLink.List(r.Context())
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		writeInternalError(w, r, err)
 		return
 	}
 	_ = jsonutil.Encode(w, http.StatusOK, response.AdminSocialLinksFromEntities(links))
@@ -30,7 +30,7 @@ func (c *Controller) replaceSocialLinks(w http.ResponseWriter, r *http.Request) 
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		writeInternalError(w, r, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
