@@ -1,4 +1,5 @@
 import type { AdminArtwork, Artwork, ArtworkInput } from '../types/artwork'
+import { APIClientError, apiRequest, apiRequestJSON } from './apiClient'
 
 export async function getArtworks(): Promise<Artwork[]> {
   return requestJSON<Artwork[]>('/api/v1/artworks', 'Не удалось загрузить работы.')
@@ -57,25 +58,30 @@ function artworkFormData(input: ArtworkInput, isPublished: boolean, image: File 
 }
 
 async function requestJSON<T>(url: string, fallbackMessage: string, init?: RequestInit): Promise<T> {
-  const response = await request(url, fallbackMessage, init)
-  return response.json() as Promise<T>
+  try {
+    return await apiRequestJSON<T>(url, init)
+  } catch (error) {
+    throw artworkError(error, fallbackMessage)
+  }
 }
 
-async function request(url: string, fallbackMessage: string, init?: RequestInit): Promise<Response> {
-  let response: Response
+async function request(url: string, fallbackMessage: string, init?: RequestInit): Promise<void> {
   try {
-    response = await fetch(url, { credentials: 'same-origin', ...init })
-  } catch {
-    throw new ArtworkServiceError('Не удалось связаться с сервером. Проверьте соединение.')
+    await apiRequest(url, init)
+  } catch (error) {
+    throw artworkError(error, fallbackMessage)
   }
+}
 
-  if (response.status === 401) throw new ArtworkServiceError('Сессия завершилась. Войдите снова.', true)
-  if (response.status === 413) throw new ArtworkServiceError('Файл слишком большой. Максимальный размер — 12 МБ.')
-  if (response.status === 415) throw new ArtworkServiceError('Выберите корректное изображение JPEG или PNG.')
-  if (response.status === 422) throw new ArtworkServiceError('У изображения слишком большое разрешение.')
-  if (response.status === 400) throw new ArtworkServiceError('Проверьте заполнение полей.')
-  if (response.status === 404) throw new ArtworkServiceError('Работа не найдена. Возможно, она уже удалена.')
-  if (response.status === 409) throw new ArtworkServiceError('Список работ изменился. Обновите страницу и повторите сортировку.')
-  if (!response.ok) throw new ArtworkServiceError(fallbackMessage)
-  return response
+function artworkError(error: unknown, fallbackMessage: string): ArtworkServiceError {
+  if (!(error instanceof APIClientError)) return new ArtworkServiceError(fallbackMessage)
+  if (error.status === null) return new ArtworkServiceError('Не удалось связаться с сервером. Проверьте соединение.')
+  if (error.status === 401) return new ArtworkServiceError('Сессия завершилась. Войдите снова.', true)
+  if (error.status === 413) return new ArtworkServiceError('Файл слишком большой. Максимальный размер — 12 МБ.')
+  if (error.status === 415) return new ArtworkServiceError('Выберите корректное изображение JPEG или PNG.')
+  if (error.status === 422) return new ArtworkServiceError('У изображения слишком большое разрешение.')
+  if (error.status === 400) return new ArtworkServiceError('Проверьте заполнение полей.')
+  if (error.status === 404) return new ArtworkServiceError('Работа не найдена. Возможно, она уже удалена.')
+  if (error.status === 409) return new ArtworkServiceError('Список работ изменился. Обновите страницу и повторите сортировку.')
+  return new ArtworkServiceError(fallbackMessage)
 }

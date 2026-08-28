@@ -5,6 +5,7 @@ import {
   type SocialHandles,
   type SocialPlatform,
 } from '../types/socialLink'
+import { APIClientError, apiRequest, apiRequestJSON } from './apiClient'
 
 export class SocialLinksServiceError extends Error {
   unauthorized: boolean
@@ -17,8 +18,7 @@ export class SocialLinksServiceError extends Error {
 }
 
 export async function getSocialHandles(): Promise<SocialHandles> {
-  const response = await request('/api/v1/admin/social_links', 'Не удалось загрузить социальные сети.')
-  const links = await response.json() as AdminSocialLink[]
+  const links = await requestJSON<AdminSocialLink[]>('/api/v1/admin/social_links', 'Не удалось загрузить социальные сети.')
   const handles: SocialHandles = { ...emptySocialHandles }
 
   for (const link of links) {
@@ -41,20 +41,26 @@ function isSocialPlatform(value: string): value is SocialPlatform {
   return socialPlatforms.some(({ id }) => id === value)
 }
 
-async function request(url: string, fallbackMessage: string, init?: RequestInit): Promise<Response> {
-  let response: Response
+async function request(url: string, fallbackMessage: string, init?: RequestInit): Promise<void> {
   try {
-    response = await fetch(url, { credentials: 'same-origin', ...init })
-  } catch {
-    throw new SocialLinksServiceError('Не удалось связаться с сервером. Проверьте соединение.')
+    await apiRequest(url, init)
+  } catch (error) {
+    throw socialLinksError(error, fallbackMessage)
   }
+}
 
-  if (response.status === 401) {
-    throw new SocialLinksServiceError('Сессия завершилась. Войдите снова.', true)
+async function requestJSON<T>(url: string, fallbackMessage: string, init?: RequestInit): Promise<T> {
+  try {
+    return await apiRequestJSON<T>(url, init)
+  } catch (error) {
+    throw socialLinksError(error, fallbackMessage)
   }
-  if (response.status === 400) {
-    throw new SocialLinksServiceError('Проверьте адреса социальных сетей.')
-  }
-  if (!response.ok) throw new SocialLinksServiceError(fallbackMessage)
-  return response
+}
+
+function socialLinksError(error: unknown, fallbackMessage: string): SocialLinksServiceError {
+  if (!(error instanceof APIClientError)) return new SocialLinksServiceError(fallbackMessage)
+  if (error.status === null) return new SocialLinksServiceError('Не удалось связаться с сервером. Проверьте соединение.')
+  if (error.status === 401) return new SocialLinksServiceError('Сессия завершилась. Войдите снова.', true)
+  if (error.status === 400) return new SocialLinksServiceError('Проверьте адреса социальных сетей.')
+  return new SocialLinksServiceError(fallbackMessage)
 }

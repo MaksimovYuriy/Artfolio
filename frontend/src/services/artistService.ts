@@ -1,4 +1,5 @@
 import type { ArtistProfile } from '../types/artist'
+import { APIClientError, apiRequestJSON } from './apiClient'
 
 interface ArtistProfileResponse {
   name: string
@@ -20,26 +21,18 @@ export class ArtistServiceError extends Error {
 }
 
 export async function getArtist(): Promise<ArtistProfile> {
-  let response: Response
-
-  try {
-    response = await fetch('/api/v1/artist_profile')
-  } catch {
-    throw new ArtistServiceError('Не удалось связаться с сервером.')
-  }
-
-  if (response.status === 404) {
-    throw new ArtistServiceError('Профиль художницы ещё не заполнен.')
-  }
-  if (!response.ok) {
-    throw new ArtistServiceError('Не удалось загрузить профиль.')
-  }
-
   let profile: ArtistProfileResponse
   try {
-    profile = await response.json() as ArtistProfileResponse
-  } catch {
-    throw new ArtistServiceError('Сервер вернул некорректные данные профиля.')
+    profile = await apiRequestJSON<ArtistProfileResponse>('/api/v1/artist_profile')
+  } catch (error) {
+    if (error instanceof APIClientError) {
+      if (error.status === null) throw new ArtistServiceError('Не удалось связаться с сервером.')
+      if (error.status === 404) throw new ArtistServiceError('Профиль художницы ещё не заполнен.')
+      if (error.code === 'invalid_response') {
+        throw new ArtistServiceError('Сервер вернул некорректные данные профиля.')
+      }
+    }
+    throw new ArtistServiceError('Не удалось загрузить профиль.')
   }
 
   return {
