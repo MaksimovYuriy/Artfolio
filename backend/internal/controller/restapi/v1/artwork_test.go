@@ -133,7 +133,7 @@ func TestArtworkControllerReorderConflict(t *testing.T) {
 }
 
 func testArtworkController(uc *fakeArtworkUseCase) *Controller {
-	return NewController(nil, nil, uc, nil, response.NewArtworkMapper("/media"))
+	return NewController(nil, nil, uc, nil, nil, response.NewArtworkMapper("/media"))
 }
 
 type fakeArtworkUseCase struct {

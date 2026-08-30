@@ -18,7 +18,7 @@ import (
 func TestRouterVersioningAndHealth(t *testing.T) {
 	artistProfile := &routerArtistProfileUseCase{}
 	session := &routerSessionUseCase{}
-	controller := v1.NewController(session, artistProfile, nil, nil, response.NewArtworkMapper("/media"))
+	controller := v1.NewController(session, artistProfile, nil, nil, nil, response.NewArtworkMapper("/media"))
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 	router := NewRouter(controller, middleware.NewAuth(session), 1<<20, log)
 

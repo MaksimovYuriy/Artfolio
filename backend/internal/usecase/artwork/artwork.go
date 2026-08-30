@@ -9,18 +9,18 @@ import (
 	"time"
 
 	"github.com/maksimovyuriy/artfolio/backend/internal/entity"
-	"github.com/maksimovyuriy/artfolio/backend/internal/lib/storage"
+	"github.com/maksimovyuriy/artfolio/backend/internal/lib/filestorage"
 	"github.com/maksimovyuriy/artfolio/backend/internal/repo"
 	"github.com/maksimovyuriy/artfolio/backend/internal/usecase"
 )
 
 type UseCase struct {
 	repo    repo.ArtworkRepository
-	storage storage.Artwork
+	storage filestorage.Artwork
 	log     *slog.Logger
 }
 
-func NewUseCase(repo repo.ArtworkRepository, storage storage.Artwork, log *slog.Logger) *UseCase {
+func NewUseCase(repo repo.ArtworkRepository, storage filestorage.Artwork, log *slog.Logger) *UseCase {
 	return &UseCase{repo: repo, storage: storage, log: log}
 }
 

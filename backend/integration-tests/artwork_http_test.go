@@ -26,7 +26,7 @@ import (
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/v1"
 	apiresponse "github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/v1/response"
 	"github.com/maksimovyuriy/artfolio/backend/internal/entity"
-	artworkstorage "github.com/maksimovyuriy/artfolio/backend/internal/lib/storage/artwork"
+	artworkstorage "github.com/maksimovyuriy/artfolio/backend/internal/lib/filestorage/artwork"
 	artworkrepo "github.com/maksimovyuriy/artfolio/backend/internal/repo/artwork"
 	artworkusecase "github.com/maksimovyuriy/artfolio/backend/internal/usecase/artwork"
 )
@@ -34,7 +34,7 @@ import (
 func TestArtworkHTTPFlow(t *testing.T) {
 	database := openTestDatabase(t, "TRUNCATE artworks RESTART IDENTITY")
 	mediaRoot := t.TempDir()
-	storageConfig := config.StorageConfig{
+	storageConfig := config.FileStorageConfig{
 		Path:        mediaRoot,
 		PublicURL:   "/media",
 		MaxFileSize: 1 << 20,
@@ -47,7 +47,7 @@ func TestArtworkHTTPFlow(t *testing.T) {
 	repository := artworkrepo.NewRepo(database)
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 	uc := artworkusecase.NewUseCase(repository, files, log)
-	controller := v1.NewController(nil, nil, uc, nil, apiresponse.NewArtworkMapper(storageConfig.PublicURL))
+	controller := v1.NewController(nil, nil, uc, nil, nil, apiresponse.NewArtworkMapper(storageConfig.PublicURL))
 	router := v1.NewRouter(controller, middleware.NewAuth(validSessionUseCase{}), 2<<20)
 
 	created := createArtworkThroughHTTP(t, router, jpegBytes(t), map[string]string{

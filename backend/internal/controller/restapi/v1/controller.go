@@ -10,6 +10,7 @@ type Controller struct {
 	artistProfile usecase.ArtistProfileUseCase
 	artwork       usecase.ArtworkUseCase
 	socialLink    usecase.SocialLinkUseCase
+	contact       usecase.ContactUseCase
 	artworkMapper response.ArtworkMapper
 }
 
@@ -18,6 +19,7 @@ func NewController(
 	artistProfile usecase.ArtistProfileUseCase,
 	artwork usecase.ArtworkUseCase,
 	socialLink usecase.SocialLinkUseCase,
+	contact usecase.ContactUseCase,
 	artworkMapper response.ArtworkMapper,
 ) *Controller {
 	return &Controller{
@@ -25,6 +27,7 @@ func NewController(
 		artistProfile: artistProfile,
 		artwork:       artwork,
 		socialLink:    socialLink,
+		contact:       contact,
 		artworkMapper: artworkMapper,
 	}
 }

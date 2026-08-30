@@ -13,6 +13,7 @@ var (
 	ErrArtworkImageRequired = errors.New("artwork image is required")
 	ErrArtworkOrderConflict = errors.New("artwork order conflict")
 	ErrInvalidSession       = errors.New("invalid session")
+	ErrEmailRecipientAbsent = errors.New("email recipient is not configured")
 )
 
 type KeyCreator interface {
@@ -42,4 +43,8 @@ type ArtworkUseCase interface {
 type SocialLinkUseCase interface {
 	List(ctx context.Context) ([]entity.SocialLink, error)
 	Replace(ctx context.Context, links []entity.SocialLink) error
+}
+
+type ContactUseCase interface {
+	Send(ctx context.Context, message entity.ContactMessage) error
 }

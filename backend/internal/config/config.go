@@ -7,10 +7,11 @@ import (
 )
 
 type Config struct {
-	HTTP    HTTPConfig    `env-prefix:"HTTP_"`
-	DB      DBConfig      `env-prefix:"DB_"`
-	App     AppConfig     `env-prefix:"APP_"`
-	Storage StorageConfig `env-prefix:"STORAGE_"`
+	HTTP        HTTPConfig        `env-prefix:"HTTP_"`
+	DB          DBConfig          `env-prefix:"DB_"`
+	App         AppConfig         `env-prefix:"APP_"`
+	FileStorage FileStorageConfig `env-prefix:"STORAGE_"`
+	Kafka       KafkaConfig       `env-prefix:"KAFKA_"`
 }
 
 type HTTPConfig struct {
@@ -35,11 +36,16 @@ type AppConfig struct {
 	Env string `env:"ENV" env-default:"prod"`
 }
 
-type StorageConfig struct {
+type FileStorageConfig struct {
 	Path        string `env:"PATH" env-default:"./media"`
 	PublicURL   string `env:"PUBLIC_URL" env-default:"/media"`
 	MaxFileSize int64  `env:"MAX_FILE_SIZE" env-default:"12582912"`
 	MaxPixels   int64  `env:"MAX_PIXELS" env-default:"25000000"`
+}
+
+type KafkaConfig struct {
+	Brokers []string `env:"BROKERS" env-default:"localhost:9092" env-separator:","`
+	Topic   string   `env:"TOPIC" env-default:"email.send"`
 }
 
 func Load() (*Config, error) {

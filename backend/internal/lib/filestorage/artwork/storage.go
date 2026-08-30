@@ -17,7 +17,7 @@ import (
 
 	"github.com/maksimovyuriy/artfolio/backend/internal/config"
 	"github.com/maksimovyuriy/artfolio/backend/internal/entity"
-	"github.com/maksimovyuriy/artfolio/backend/internal/lib/storage"
+	"github.com/maksimovyuriy/artfolio/backend/internal/lib/filestorage"
 )
 
 type Storage struct {
@@ -28,9 +28,9 @@ type Storage struct {
 	maxPixels   int64
 }
 
-var _ storage.Artwork = (*Storage)(nil)
+var _ filestorage.Artwork = (*Storage)(nil)
 
-func New(cfg config.StorageConfig) (*Storage, error) {
+func New(cfg config.FileStorageConfig) (*Storage, error) {
 	if cfg.Path == "" {
 		return nil, errors.New("storage path is required")
 	}
@@ -83,10 +83,10 @@ func (s *Storage) Save(ctx context.Context, content io.Reader) (stored entity.St
 		return stored, fmt.Errorf("write temporary artwork image: %w", err)
 	}
 	if written > s.maxFileSize {
-		return stored, storage.ErrFileTooLarge
+		return stored, filestorage.ErrFileTooLarge
 	}
 	if written == 0 {
-		return stored, storage.ErrInvalidImage
+		return stored, filestorage.ErrInvalidImage
 	}
 
 	if _, err := temporaryFile.Seek(0, io.SeekStart); err != nil {
@@ -94,20 +94,20 @@ func (s *Storage) Save(ctx context.Context, content io.Reader) (stored entity.St
 	}
 	imageConfig, format, err := image.DecodeConfig(temporaryFile)
 	if err != nil {
-		return stored, storage.ErrInvalidImage
+		return stored, filestorage.ErrInvalidImage
 	}
 	extension, ok := extensionForFormat(format)
 	if !ok || imageConfig.Width <= 0 || imageConfig.Height <= 0 {
-		return stored, storage.ErrInvalidImage
+		return stored, filestorage.ErrInvalidImage
 	}
 	if int64(imageConfig.Width) > s.maxPixels/int64(imageConfig.Height) {
-		return stored, storage.ErrImageTooManyPixels
+		return stored, filestorage.ErrImageTooManyPixels
 	}
 	if _, err := temporaryFile.Seek(0, io.SeekStart); err != nil {
 		return stored, fmt.Errorf("rewind temporary artwork image: %w", err)
 	}
 	if _, _, err := image.Decode(temporaryFile); err != nil {
-		return stored, storage.ErrInvalidImage
+		return stored, filestorage.ErrInvalidImage
 	}
 
 	name, err := randomName()
@@ -142,13 +142,13 @@ func (s *Storage) Delete(ctx context.Context, key string) error {
 		return err
 	}
 	if !validKey(key) {
-		return storage.ErrInvalidKey
+		return filestorage.ErrInvalidKey
 	}
 
 	filename := filepath.Join(s.root, filepath.FromSlash(key))
 	relative, err := filepath.Rel(s.root, filename)
 	if err != nil || relative == "." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
-		return storage.ErrInvalidKey
+		return filestorage.ErrInvalidKey
 	}
 
 	if err := os.Remove(filename); err != nil && !errors.Is(err, os.ErrNotExist) {

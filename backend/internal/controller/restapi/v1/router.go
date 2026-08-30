@@ -25,6 +25,7 @@ func NewRouter(controller *Controller, authMiddleware *middleware.Auth, maxUploa
 
 	r.Get("/artist_profile", controller.getArtistProfile)
 	r.Get("/artworks", controller.listPublishedArtworks)
+	r.Post("/contact", controller.sendContactMessage)
 
 	r.Route("/admin", func(r chi.Router) {
 		r.Post("/session", controller.createSession)

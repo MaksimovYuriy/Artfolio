@@ -16,7 +16,7 @@ func TestSocialLinkHandlers(t *testing.T) {
 	uc := &socialLinkUseCaseStub{links: []entity.SocialLink{
 		{Platform: entity.SocialPlatformTelegram, Handle: "anna_art"},
 	}}
-	controller := NewController(nil, nil, nil, uc, response.NewArtworkMapper("/media"))
+	controller := NewController(nil, nil, nil, uc, nil, response.NewArtworkMapper("/media"))
 
 	t.Run("list", func(t *testing.T) {
 		result := httptest.NewRecorder()

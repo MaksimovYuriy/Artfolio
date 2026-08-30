@@ -8,7 +8,7 @@ import (
 
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/jsonutil"
 	"github.com/maksimovyuriy/artfolio/backend/internal/entity"
-	"github.com/maksimovyuriy/artfolio/backend/internal/lib/storage"
+	"github.com/maksimovyuriy/artfolio/backend/internal/lib/filestorage"
 	"github.com/maksimovyuriy/artfolio/backend/internal/usecase"
 )
 
@@ -113,11 +113,13 @@ func mapError(err error) *Error {
 		return &Error{Status: http.StatusBadRequest, Code: "validation_failed", Message: "Request validation failed"}
 	case errors.Is(err, usecase.ErrArtworkOrderConflict):
 		return &Error{Status: http.StatusConflict, Code: "artwork_order_conflict", Message: "Artwork order has changed"}
-	case errors.Is(err, storage.ErrFileTooLarge):
+	case errors.Is(err, usecase.ErrEmailRecipientAbsent):
+		return &Error{Status: http.StatusServiceUnavailable, Code: "contact_unavailable", Message: "Contact form is unavailable"}
+	case errors.Is(err, filestorage.ErrFileTooLarge):
 		return &Error{Status: http.StatusRequestEntityTooLarge, Code: "file_too_large", Message: "Uploaded file is too large"}
-	case errors.Is(err, storage.ErrInvalidImage):
+	case errors.Is(err, filestorage.ErrInvalidImage):
 		return &Error{Status: http.StatusUnsupportedMediaType, Code: "invalid_image_type", Message: "Unsupported image type"}
-	case errors.Is(err, storage.ErrImageTooManyPixels):
+	case errors.Is(err, filestorage.ErrImageTooManyPixels):
 		return &Error{Status: http.StatusUnprocessableEntity, Code: "image_too_large", Message: "Image resolution is too large"}
 	default:
 		return &Error{Status: http.StatusInternalServerError, Code: "internal_error", Message: "Internal server error"}

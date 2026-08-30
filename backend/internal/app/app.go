@@ -13,11 +13,12 @@ import (
 	"github.com/maksimovyuriy/artfolio/backend/internal/config"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/middleware"
-	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/v1"
+	v1 "github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/v1"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/v1/response"
+	"github.com/maksimovyuriy/artfolio/backend/internal/lib/filestorage"
+	artworkstorage "github.com/maksimovyuriy/artfolio/backend/internal/lib/filestorage/artwork"
+	kafkaproducer "github.com/maksimovyuriy/artfolio/backend/internal/lib/kafka"
 	"github.com/maksimovyuriy/artfolio/backend/internal/lib/logger"
-	"github.com/maksimovyuriy/artfolio/backend/internal/lib/storage"
-	artworkstorage "github.com/maksimovyuriy/artfolio/backend/internal/lib/storage/artwork"
 	"github.com/maksimovyuriy/artfolio/backend/internal/repo"
 	artistprofile "github.com/maksimovyuriy/artfolio/backend/internal/repo/artist_profile"
 	artworkrepo "github.com/maksimovyuriy/artfolio/backend/internal/repo/artwork"
@@ -29,6 +30,7 @@ import (
 	"github.com/maksimovyuriy/artfolio/backend/internal/usecase"
 	artistusecase "github.com/maksimovyuriy/artfolio/backend/internal/usecase/artist_profile"
 	artworkusecase "github.com/maksimovyuriy/artfolio/backend/internal/usecase/artwork"
+	contactusecase "github.com/maksimovyuriy/artfolio/backend/internal/usecase/contact"
 	sessionusecase "github.com/maksimovyuriy/artfolio/backend/internal/usecase/session"
 	sociallinkusecase "github.com/maksimovyuriy/artfolio/backend/internal/usecase/social_link"
 )
@@ -48,6 +50,7 @@ type useCases struct {
 	artistProfile usecase.ArtistProfileUseCase
 	artwork       usecase.ArtworkUseCase
 	socialLink    usecase.SocialLinkUseCase
+	contact       usecase.ContactUseCase
 }
 
 type servers struct {
@@ -74,14 +77,21 @@ func Run() error {
 	defer database.Close()
 	log.Info("Database started")
 
-	artworkStorage, err := artworkstorage.New(appCfg.Storage)
+	artworkStorage, err := artworkstorage.New(appCfg.FileStorage)
 	if err != nil {
 		return err
 	}
 	log.Info("Artwork storage started")
 
+	producer, err := kafkaproducer.NewProducer(appCfg.Kafka)
+	if err != nil {
+		return err
+	}
+	defer producer.Close()
+	log.Info("Kafka producer started")
+
 	repositories := initRepositories(database)
-	useCases := initUseCases(repositories, artworkStorage, log)
+	useCases := initUseCases(repositories, artworkStorage, producer, log)
 	servers := initServers(appCfg, useCases, log)
 
 	apiErrors := make(chan error, 1)
@@ -118,26 +128,28 @@ func initRepositories(database *sql.DB) repositories {
 	}
 }
 
-func initUseCases(repositories repositories, artworkStorage storage.Artwork, log *slog.Logger) useCases {
+func initUseCases(repositories repositories, artworkStorage filestorage.Artwork, producer *kafkaproducer.Producer, log *slog.Logger) useCases {
 	return useCases{
 		session:       sessionusecase.NewUseCase(repositories.key, repositories.session),
 		artistProfile: artistusecase.NewUseCase(repositories.artistProfile, repositories.socialLink),
 		artwork:       artworkusecase.NewUseCase(repositories.artwork, artworkStorage, log),
 		socialLink:    sociallinkusecase.NewUseCase(repositories.artistProfile, repositories.socialLink),
+		contact:       contactusecase.NewUseCase(repositories.artistProfile, producer),
 	}
 }
 
 func initServers(appCfg *config.Config, useCases useCases, log *slog.Logger) servers {
-	artworkMapper := response.NewArtworkMapper(appCfg.Storage.PublicURL)
+	artworkMapper := response.NewArtworkMapper(appCfg.FileStorage.PublicURL)
 	controller := v1.NewController(
 		useCases.session,
 		useCases.artistProfile,
 		useCases.artwork,
 		useCases.socialLink,
+		useCases.contact,
 		artworkMapper,
 	)
 	authMiddleware := middleware.NewAuth(useCases.session)
-	maxUploadBodySize := appCfg.Storage.MaxFileSize + multipartFormOverheadAllowance
+	maxUploadBodySize := appCfg.FileStorage.MaxFileSize + multipartFormOverheadAllowance
 	router := restapi.NewRouter(controller, authMiddleware, maxUploadBodySize, log)
 
 	return servers{api: restapi.NewServer(appCfg.HTTP, router, log)}
