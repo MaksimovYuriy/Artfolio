@@ -1,0 +1,26 @@
+package contact
+
+import (
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
+)
+
+func newEventID() (string, error) {
+	var value [16]byte
+	if _, err := rand.Read(value[:]); err != nil {
+		return "", fmt.Errorf("read random bytes: %w", err)
+	}
+
+	// UUID version 4 and RFC 4122 variant.
+	value[6] = value[6]&0x0f | 0x40
+	value[8] = value[8]&0x3f | 0x80
+
+	var encoded [32]byte
+	hex.Encode(encoded[:], value[:])
+	return string(encoded[0:8]) + "-" +
+		string(encoded[8:12]) + "-" +
+		string(encoded[12:16]) + "-" +
+		string(encoded[16:20]) + "-" +
+		string(encoded[20:32]), nil
+}

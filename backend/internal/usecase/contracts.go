@@ -9,11 +9,11 @@ import (
 )
 
 var (
-	ErrArtworkNotFound      = errors.New("artwork not found")
-	ErrArtworkImageRequired = errors.New("artwork image is required")
-	ErrArtworkOrderConflict = errors.New("artwork order conflict")
-	ErrInvalidSession       = errors.New("invalid session")
-	ErrEmailRecipientAbsent = errors.New("email recipient is not configured")
+	ErrArtworkNotFound        = errors.New("artwork not found")
+	ErrArtworkImageRequired   = errors.New("artwork image is required")
+	ErrArtworkOrderConflict   = errors.New("artwork order conflict")
+	ErrInvalidSession         = errors.New("invalid session")
+	ErrContactRecipientAbsent = errors.New("contact recipient is not configured")
 )
 
 type KeyCreator interface {

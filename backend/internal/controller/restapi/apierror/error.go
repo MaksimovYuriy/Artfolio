@@ -113,7 +113,7 @@ func mapError(err error) *Error {
 		return &Error{Status: http.StatusBadRequest, Code: "validation_failed", Message: "Request validation failed"}
 	case errors.Is(err, usecase.ErrArtworkOrderConflict):
 		return &Error{Status: http.StatusConflict, Code: "artwork_order_conflict", Message: "Artwork order has changed"}
-	case errors.Is(err, usecase.ErrEmailRecipientAbsent):
+	case errors.Is(err, usecase.ErrContactRecipientAbsent):
 		return &Error{Status: http.StatusServiceUnavailable, Code: "contact_unavailable", Message: "Contact form is unavailable"}
 	case errors.Is(err, filestorage.ErrFileTooLarge):
 		return &Error{Status: http.StatusRequestEntityTooLarge, Code: "file_too_large", Message: "Uploaded file is too large"}

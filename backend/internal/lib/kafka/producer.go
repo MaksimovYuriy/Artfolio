@@ -37,16 +37,24 @@ func NewProducer(cfg config.KafkaConfig) (*Producer, error) {
 	}}, nil
 }
 
-func (p *Producer) Send(ctx context.Context, email entity.EmailMessage) error {
-	payload, err := json.Marshal(email)
+func (p *Producer) Publish(ctx context.Context, event entity.ContactMessageSubmitted) error {
+	message, err := messageFor(event)
 	if err != nil {
-		return fmt.Errorf("marshal email message: %w", err)
+		return err
 	}
 
-	if err := p.writer.WriteMessages(ctx, kafkago.Message{Key: []byte(email.ReplyTo), Value: payload}); err != nil {
-		return fmt.Errorf("write email message: %w", err)
+	if err := p.writer.WriteMessages(ctx, message); err != nil {
+		return fmt.Errorf("write contact message event: %w", err)
 	}
 	return nil
+}
+
+func messageFor(event entity.ContactMessageSubmitted) (kafkago.Message, error) {
+	payload, err := json.Marshal(event)
+	if err != nil {
+		return kafkago.Message{}, fmt.Errorf("marshal contact message event: %w", err)
+	}
+	return kafkago.Message{Key: []byte(event.EventID), Value: payload}, nil
 }
 
 func (p *Producer) Close() error {

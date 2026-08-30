@@ -9,10 +9,10 @@ import (
 	"github.com/maksimovyuriy/artfolio/backend/internal/usecase"
 )
 
-func TestSendBuildsEmailMessage(t *testing.T) {
+func TestSendPublishesContactMessage(t *testing.T) {
 	recipient := "artist@example.com"
-	producer := &producerStub{}
-	uc := NewUseCase(&profileRepositoryStub{profile: entity.ArtistProfile{Email: &recipient}}, producer)
+	publisher := &publisherStub{}
+	uc := NewUseCase(&profileRepositoryStub{profile: entity.ArtistProfile{Email: &recipient}}, publisher)
 
 	err := uc.Send(context.Background(), entity.ContactMessage{
 		SenderEmail: "sender@example.com",
@@ -21,19 +21,19 @@ func TestSendBuildsEmailMessage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Send() error = %v", err)
 	}
-	if producer.email.Recipient != recipient || producer.email.ReplyTo != "sender@example.com" || producer.email.Body != "Здравствуйте" {
-		t.Fatalf("produced email = %#v", producer.email)
+	if publisher.event.RecipientEmail != recipient || publisher.event.SenderEmail != "sender@example.com" || publisher.event.Message != "Здравствуйте" {
+		t.Fatalf("published event = %#v", publisher.event)
 	}
-	if producer.email.Subject == "" {
-		t.Fatal("produced email has empty subject")
+	if publisher.event.EventID == "" {
+		t.Fatal("published event has empty event id")
 	}
 }
 
 func TestSendRequiresConfiguredRecipient(t *testing.T) {
-	uc := NewUseCase(&profileRepositoryStub{}, &producerStub{})
+	uc := NewUseCase(&profileRepositoryStub{}, &publisherStub{})
 	err := uc.Send(context.Background(), entity.ContactMessage{SenderEmail: "sender@example.com", Message: "Hello"})
-	if !errors.Is(err, usecase.ErrEmailRecipientAbsent) {
-		t.Fatalf("Send() error = %v, want ErrEmailRecipientAbsent", err)
+	if !errors.Is(err, usecase.ErrContactRecipientAbsent) {
+		t.Fatalf("Send() error = %v, want ErrContactRecipientAbsent", err)
 	}
 }
 
@@ -49,11 +49,11 @@ func (r *profileRepositoryStub) Update(context.Context, entity.ArtistProfile) er
 	return nil
 }
 
-type producerStub struct {
-	email entity.EmailMessage
+type publisherStub struct {
+	event entity.ContactMessageSubmitted
 }
 
-func (p *producerStub) Send(_ context.Context, email entity.EmailMessage) error {
-	p.email = email
+func (p *publisherStub) Publish(_ context.Context, event entity.ContactMessageSubmitted) error {
+	p.event = event
 	return nil
 }

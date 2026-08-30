@@ -9,19 +9,17 @@ import (
 	"github.com/maksimovyuriy/artfolio/backend/internal/usecase"
 )
 
-const emailSubject = "Новое сообщение из портфолио"
-
-type emailProducer interface {
-	Send(ctx context.Context, email entity.EmailMessage) error
+type eventPublisher interface {
+	Publish(ctx context.Context, event entity.ContactMessageSubmitted) error
 }
 
 type UseCase struct {
 	profileRepo repo.ArtistProfileRepository
-	producer    emailProducer
+	publisher   eventPublisher
 }
 
-func NewUseCase(profileRepo repo.ArtistProfileRepository, producer emailProducer) *UseCase {
-	return &UseCase{profileRepo: profileRepo, producer: producer}
+func NewUseCase(profileRepo repo.ArtistProfileRepository, publisher eventPublisher) *UseCase {
+	return &UseCase{profileRepo: profileRepo, publisher: publisher}
 }
 
 var _ usecase.ContactUseCase = (*UseCase)(nil)
@@ -37,12 +35,21 @@ func (u *UseCase) Send(ctx context.Context, message entity.ContactMessage) error
 		return fmt.Errorf("get contact email recipient: %w", err)
 	}
 	if profile.Email == nil || *profile.Email == "" {
-		return usecase.ErrEmailRecipientAbsent
+		return usecase.ErrContactRecipientAbsent
 	}
 
-	email := entity.EmailMessage{Recipient: *profile.Email, ReplyTo: message.SenderEmail, Subject: emailSubject, Body: message.Message}
-	if err := u.producer.Send(ctx, email); err != nil {
-		return fmt.Errorf("enqueue contact email: %w", err)
+	eventID, err := newEventID()
+	if err != nil {
+		return fmt.Errorf("generate contact event id: %w", err)
+	}
+	event := entity.ContactMessageSubmitted{
+		EventID:        eventID,
+		RecipientEmail: *profile.Email,
+		SenderEmail:    message.SenderEmail,
+		Message:        message.Message,
+	}
+	if err := u.publisher.Publish(ctx, event); err != nil {
+		return fmt.Errorf("publish contact message: %w", err)
 	}
 	return nil
 }

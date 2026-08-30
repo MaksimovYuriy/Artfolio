@@ -12,6 +12,15 @@ type ContactMessage struct {
 	Message     string
 }
 
+// ContactMessageSubmitted is the integration event published after the
+// backend has accepted a contact form submission and resolved its recipient.
+type ContactMessageSubmitted struct {
+	EventID        string `json:"eventId"`
+	RecipientEmail string `json:"recipientEmail"`
+	SenderEmail    string `json:"senderEmail"`
+	Message        string `json:"message"`
+}
+
 func (message ContactMessage) Validated() (ContactMessage, error) {
 	message.SenderEmail = strings.TrimSpace(message.SenderEmail)
 	message.Message = strings.TrimSpace(message.Message)
