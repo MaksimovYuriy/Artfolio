@@ -57,7 +57,7 @@ Artfolio — публичное портфолио художницы с зак�
 | `STORAGE_MAX_FILE_SIZE` | Максимальный размер файла в байтах |
 | `STORAGE_MAX_PIXELS` | Максимальное количество пикселей изображения |
 | `KAFKA_BROKERS` | Kafka bootstrap brokers; внутри Compose используется `kafka:19092` |
-| `KAFKA_TOPIC` | Топик событий об отправке контактной формы |
+| `KAFKA_CONTACT_MESSAGE_SUBMITTED_TOPIC` | Топик событий об отправке контактной формы |
 | `KAFKA_TOPIC_PARTITIONS` | Количество партиций, создаваемых при первом запуске |
 | `KAFKA_TOPIC_RETENTION_MS` | Срок хранения сообщений топика в миллисекундах |
 | `GOOSE_*` | Параметры CLI Goose для ручной работы с миграциями |
@@ -92,7 +92,7 @@ docker compose logs -f backend
 ```
 
 В Docker Compose backend хранит изображения в volume `artwork_media`, PostgreSQL — в `postgres_data`,
-а Kafka — в `kafka_data`. Топик из `KAFKA_TOPIC` создаётся сервисом `kafka-init`: по умолчанию с
+а Kafka — в `kafka_data`. Топик из `KAFKA_CONTACT_MESSAGE_SUBMITTED_TOPIC` создаётся сервисом `kafka-init`: по умолчанию с
 тремя партициями, replication factor 1 и retention 7 дней. Автоматическое создание топиков отключено.
 
 Проверить топик можно командой:
@@ -101,7 +101,7 @@ docker compose logs -f backend
 docker compose exec kafka /opt/kafka/bin/kafka-topics.sh \
   --bootstrap-server kafka:19092 \
   --describe \
-  --topic contact-message.submitted
+  --topic contact-message.submitted.v1
 ```
 
 ## Локальная разработка

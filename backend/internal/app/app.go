@@ -15,9 +15,10 @@ import (
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/middleware"
 	v1 "github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/v1"
 	"github.com/maksimovyuriy/artfolio/backend/internal/controller/restapi/v1/response"
+	kafkaproducer "github.com/maksimovyuriy/artfolio/backend/internal/kafka"
+	contactkafka "github.com/maksimovyuriy/artfolio/backend/internal/kafka/contact"
 	"github.com/maksimovyuriy/artfolio/backend/internal/lib/filestorage"
 	artworkstorage "github.com/maksimovyuriy/artfolio/backend/internal/lib/filestorage/artwork"
-	kafkaproducer "github.com/maksimovyuriy/artfolio/backend/internal/lib/kafka"
 	"github.com/maksimovyuriy/artfolio/backend/internal/lib/logger"
 	"github.com/maksimovyuriy/artfolio/backend/internal/repo"
 	artistprofile "github.com/maksimovyuriy/artfolio/backend/internal/repo/artist_profile"
@@ -89,9 +90,13 @@ func Run() error {
 	}
 	defer producer.Close()
 	log.Info("Kafka producer started")
+	contactPublisher, err := contactkafka.NewPublisher(producer, appCfg.Kafka.Topics.ContactMessageSubmitted)
+	if err != nil {
+		return err
+	}
 
 	repositories := initRepositories(database)
-	useCases := initUseCases(repositories, artworkStorage, producer, log)
+	useCases := initUseCases(repositories, artworkStorage, contactPublisher, log)
 	servers := initServers(appCfg, useCases, log)
 
 	apiErrors := make(chan error, 1)
@@ -128,13 +133,16 @@ func initRepositories(database *sql.DB) repositories {
 	}
 }
 
-func initUseCases(repositories repositories, artworkStorage filestorage.Artwork, producer *kafkaproducer.Producer, log *slog.Logger) useCases {
+func initUseCases(
+	repositories repositories, artworkStorage filestorage.Artwork,
+	contactPublisher *contactkafka.Publisher, log *slog.Logger,
+) useCases {
 	return useCases{
 		session:       sessionusecase.NewUseCase(repositories.key, repositories.session),
 		artistProfile: artistusecase.NewUseCase(repositories.artistProfile, repositories.socialLink),
 		artwork:       artworkusecase.NewUseCase(repositories.artwork, artworkStorage, log),
 		socialLink:    sociallinkusecase.NewUseCase(repositories.artistProfile, repositories.socialLink),
-		contact:       contactusecase.NewUseCase(repositories.artistProfile, producer),
+		contact:       contactusecase.NewUseCase(repositories.artistProfile, contactPublisher),
 	}
 }
 

@@ -26,3 +26,22 @@ func TestContactMessageRejectsInvalidInput(t *testing.T) {
 		}
 	}
 }
+
+func TestContactMessageSubmittedValidatesRecipientEmail(t *testing.T) {
+	event, err := (ContactMessageSubmitted{RecipientEmail: " artist@example.com "}).Validated()
+	if err != nil {
+		t.Fatalf("Validated() error = %v", err)
+	}
+	if event.RecipientEmail != "artist@example.com" {
+		t.Fatalf("RecipientEmail = %q", event.RecipientEmail)
+	}
+}
+
+func TestContactMessageSubmittedRequiresValidRecipientEmail(t *testing.T) {
+	for _, recipientEmail := range []string{"", "   ", "invalid"} {
+		event := ContactMessageSubmitted{RecipientEmail: recipientEmail}
+		if _, err := event.Validated(); !errors.Is(err, ErrValidation) {
+			t.Fatalf("Validated(%q) error = %v, want ErrValidation", recipientEmail, err)
+		}
+	}
+}

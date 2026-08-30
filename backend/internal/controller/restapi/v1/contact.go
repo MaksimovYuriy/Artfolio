@@ -18,5 +18,5 @@ func (c *Controller) sendContactMessage(w http.ResponseWriter, r *http.Request) 
 		apierror.Write(w, r, err)
 		return
 	}
-	w.WriteHeader(http.StatusAccepted)
+	w.WriteHeader(http.StatusOK)
 }

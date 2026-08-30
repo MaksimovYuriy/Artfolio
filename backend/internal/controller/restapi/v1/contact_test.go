@@ -19,7 +19,7 @@ func TestSendContactMessage(t *testing.T) {
 
 	controller.sendContactMessage(result, request)
 
-	if result.Code != http.StatusAccepted {
+	if result.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %q", result.Code, result.Body.String())
 	}
 	if contact.message.SenderEmail != "sender@example.com" || contact.message.Message != "Hello" {

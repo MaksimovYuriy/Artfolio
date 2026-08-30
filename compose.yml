@@ -88,7 +88,7 @@ services:
       kafka:
         condition: service_healthy
     environment:
-      KAFKA_TOPIC: ${KAFKA_TOPIC:-contact-message.submitted}
+      KAFKA_CONTACT_MESSAGE_SUBMITTED_TOPIC: ${KAFKA_CONTACT_MESSAGE_SUBMITTED_TOPIC:-contact-message.submitted.v1}
       KAFKA_TOPIC_PARTITIONS: ${KAFKA_TOPIC_PARTITIONS:-3}
       KAFKA_TOPIC_RETENTION_MS: ${KAFKA_TOPIC_RETENTION_MS:-604800000}
     command:
@@ -99,14 +99,14 @@ services:
           --bootstrap-server kafka:19092 \
           --create \
           --if-not-exists \
-          --topic "$${KAFKA_TOPIC}" \
+          --topic "$${KAFKA_CONTACT_MESSAGE_SUBMITTED_TOPIC}" \
           --partitions "$${KAFKA_TOPIC_PARTITIONS}" \
           --replication-factor 1
         /opt/kafka/bin/kafka-configs.sh \
           --bootstrap-server kafka:19092 \
           --alter \
           --entity-type topics \
-          --entity-name "$${KAFKA_TOPIC}" \
+          --entity-name "$${KAFKA_CONTACT_MESSAGE_SUBMITTED_TOPIC}" \
           --add-config "cleanup.policy=delete,retention.ms=$${KAFKA_TOPIC_RETENTION_MS}"
     logging: *default-logging
 

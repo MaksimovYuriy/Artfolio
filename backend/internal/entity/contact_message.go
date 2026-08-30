@@ -21,6 +21,20 @@ type ContactMessageSubmitted struct {
 	Message        string `json:"message"`
 }
 
+func (event ContactMessageSubmitted) Validated() (ContactMessageSubmitted, error) {
+	event.RecipientEmail = strings.TrimSpace(event.RecipientEmail)
+	if event.RecipientEmail == "" {
+		return ContactMessageSubmitted{}, NewValidationError("recipientEmail", "is required")
+	}
+
+	address, err := mail.ParseAddress(event.RecipientEmail)
+	if err != nil || address.Address != event.RecipientEmail || !isASCII(event.RecipientEmail) {
+		return ContactMessageSubmitted{}, NewValidationError("recipientEmail", "is invalid")
+	}
+
+	return event, nil
+}
+
 func (message ContactMessage) Validated() (ContactMessage, error) {
 	message.SenderEmail = strings.TrimSpace(message.SenderEmail)
 	message.Message = strings.TrimSpace(message.Message)

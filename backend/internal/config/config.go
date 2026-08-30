@@ -45,7 +45,11 @@ type FileStorageConfig struct {
 
 type KafkaConfig struct {
 	Brokers []string `env:"BROKERS" env-default:"localhost:9092" env-separator:","`
-	Topic   string   `env:"TOPIC" env-default:"contact-message.submitted"`
+	Topics  KafkaTopicsConfig
+}
+
+type KafkaTopicsConfig struct {
+	ContactMessageSubmitted string `env:"CONTACT_MESSAGE_SUBMITTED_TOPIC" env-default:"contact-message.submitted.v1"`
 }
 
 func Load() (*Config, error) {
