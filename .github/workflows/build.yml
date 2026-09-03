@@ -53,6 +53,20 @@ jobs:
         env:
           ARTFOLIO_TEST_DATABASE_URL: postgres://artfolio_test:artfolio_test@127.0.0.1:55432/artfolio_test?sslmode=disable
         run: go test -tags=integration ./integration-tests
+
+  mail-service-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: mail-service/go.mod
+          cache-dependency-path: mail-service/go.sum
+
+      - name: Run mail service tests
+        working-directory: mail-service
+        run: go test -race ./...
   
   frontend-checks:
     runs-on: ubuntu-latest
@@ -81,6 +95,7 @@ jobs:
     needs:
       - backend-unit
       - backend-integration
+      - mail-service-unit
       - frontend-checks
 
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -115,3 +130,10 @@ jobs:
           context: ./backend
           push: true
           tags: ghcr.io/maksimovyuriy/artfolio-backend:latest
+
+      - name: Build and push mail service
+        uses: docker/build-push-action@v6
+        with:
+          context: ./mail-service
+          push: true
+          tags: ghcr.io/maksimovyuriy/artfolio-mail-service:latest
