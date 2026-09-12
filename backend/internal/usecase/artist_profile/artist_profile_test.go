@@ -8,9 +8,9 @@ import (
 )
 
 func TestGetIncludesSocialLinks(t *testing.T) {
-	profileRepo := &profileRepositoryStub{profile: entity.ArtistProfile{ID: 12, Name: "Анна"}}
+	profileRepo := &profileRepositoryStub{profile: entity.ArtistProfile{ID: 12, Name: "Тестовый автор"}}
 	linkRepo := &socialLinkRepositoryStub{links: []entity.SocialLink{
-		{ArtistProfileID: 12, Platform: entity.SocialPlatformTelegram, Handle: "anna_art"},
+		{ArtistProfileID: 12, Platform: entity.SocialPlatformTelegram, Handle: "demo_author"},
 	}}
 	uc := NewUseCase(profileRepo, linkRepo)
 

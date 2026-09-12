@@ -6,7 +6,7 @@ export function About({ artist }: { artist: ArtistProfile }) {
   return (
     <Box component="section" id="about" sx={{ py: { xs: 10, md: 16 }, bgcolor: 'background.paper' }}>
       <Container>
-        <SectionHeading eyebrow="Знакомство" title="О художнице" />
+        <SectionHeading eyebrow="Знакомство" title="Об авторе" />
         <Box sx={{ maxWidth: 760 }}>
           <Stack spacing={4}>
             <Typography variant="h3" sx={{ fontSize: { xs: '2rem', md: '3rem' } }}>{artist.name}</Typography>

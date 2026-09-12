@@ -27,7 +27,7 @@ export async function getArtist(): Promise<ArtistProfile> {
   } catch (error) {
     if (error instanceof APIClientError) {
       if (error.status === null) throw new ArtistServiceError('Не удалось связаться с сервером.')
-      if (error.status === 404) throw new ArtistServiceError('Профиль художницы ещё не заполнен.')
+      if (error.status === 404) throw new ArtistServiceError('Профиль автора ещё не заполнен.')
       if (error.code === 'invalid_response') {
         throw new ArtistServiceError('Сервер вернул некорректные данные профиля.')
       }

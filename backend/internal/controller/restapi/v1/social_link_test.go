@@ -14,7 +14,7 @@ import (
 
 func TestSocialLinkHandlers(t *testing.T) {
 	uc := &socialLinkUseCaseStub{links: []entity.SocialLink{
-		{Platform: entity.SocialPlatformTelegram, Handle: "anna_art"},
+		{Platform: entity.SocialPlatformTelegram, Handle: "demo_author"},
 	}}
 	controller := NewController(nil, nil, nil, uc, nil, response.NewArtworkMapper("/media"))
 
@@ -28,13 +28,13 @@ func TestSocialLinkHandlers(t *testing.T) {
 		if err := json.Unmarshal(result.Body.Bytes(), &links); err != nil {
 			t.Fatalf("decode response: %v", err)
 		}
-		if len(links) != 1 || links[0].Handle != "anna_art" {
+		if len(links) != 1 || links[0].Handle != "demo_author" {
 			t.Fatalf("links = %#v", links)
 		}
 	})
 
 	t.Run("replace", func(t *testing.T) {
-		body := bytes.NewBufferString(`{"socialLinks":[{"platform":"vk","handle":"anna"}]}`)
+		body := bytes.NewBufferString(`{"socialLinks":[{"platform":"vk","handle":"demo_author"}]}`)
 		result := httptest.NewRecorder()
 		controller.replaceSocialLinks(result, httptest.NewRequest(http.MethodPut, "/admin/social_links", body))
 		if result.Code != http.StatusNoContent {

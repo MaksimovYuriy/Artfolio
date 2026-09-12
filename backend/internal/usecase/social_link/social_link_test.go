@@ -14,8 +14,8 @@ func TestReplaceNormalizesAndSkipsEmptyHandles(t *testing.T) {
 	uc := NewUseCase(profileRepo, linkRepo)
 
 	err := uc.Replace(context.Background(), []entity.SocialLink{
-		{Platform: entity.SocialPlatformTelegram, Handle: " https://t.me/anna_art "},
-		{Platform: entity.SocialPlatformInstagram, Handle: "  @anna.art  "},
+		{Platform: entity.SocialPlatformTelegram, Handle: " https://t.me/demo_author "},
+		{Platform: entity.SocialPlatformInstagram, Handle: "  @demo.author  "},
 		{Platform: entity.SocialPlatformVK, Handle: "   "},
 	})
 	if err != nil {
@@ -27,7 +27,7 @@ func TestReplaceNormalizesAndSkipsEmptyHandles(t *testing.T) {
 	if len(linkRepo.replaced) != 2 {
 		t.Fatalf("Replace() links = %#v", linkRepo.replaced)
 	}
-	if linkRepo.replaced[0].Handle != "anna_art" || linkRepo.replaced[1].Handle != "anna.art" {
+	if linkRepo.replaced[0].Handle != "demo_author" || linkRepo.replaced[1].Handle != "demo.author" {
 		t.Fatalf("Replace() normalized links = %#v", linkRepo.replaced)
 	}
 }

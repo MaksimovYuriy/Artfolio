@@ -6,8 +6,8 @@ import (
 )
 
 func TestValidatedNormalizesEntities(t *testing.T) {
-	profile, err := (ArtistProfile{Name: "  Анна  "}).Validated()
-	if err != nil || profile.Name != "Анна" {
+	profile, err := (ArtistProfile{Name: "  Тестовый автор  "}).Validated()
+	if err != nil || profile.Name != "Тестовый автор" {
 		t.Fatalf("ArtistProfile.Validated() = %#v, %v", profile, err)
 	}
 
@@ -16,8 +16,8 @@ func TestValidatedNormalizesEntities(t *testing.T) {
 		t.Fatalf("Artwork.Validated() = %#v, %v", artwork, err)
 	}
 
-	link, err := (SocialLink{Platform: SocialPlatformTelegram, Handle: " https://t.me/anna_art "}).Validated()
-	if err != nil || link.Handle != "anna_art" {
+	link, err := (SocialLink{Platform: SocialPlatformTelegram, Handle: " https://t.me/demo_author "}).Validated()
+	if err != nil || link.Handle != "demo_author" {
 		t.Fatalf("SocialLink.Validated() = %#v, %v", link, err)
 	}
 }
@@ -29,7 +29,7 @@ func TestValidatedRejectsBusinessRuleViolation(t *testing.T) {
 	}
 
 	email := "художник@example.com"
-	_, err = (ArtistProfile{Name: "Анна", Email: &email}).Validated()
+	_, err = (ArtistProfile{Name: "Тестовый автор", Email: &email}).Validated()
 	if !errors.Is(err, ErrValidation) {
 		t.Fatalf("ArtistProfile.Validated() error = %v, want ErrValidation", err)
 	}

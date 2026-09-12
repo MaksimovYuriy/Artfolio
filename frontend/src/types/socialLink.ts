@@ -1,8 +1,8 @@
 export const socialPlatforms = [
-  { id: 'telegram', label: 'Telegram', prefix: 't.me/', placeholder: 'anna_art' },
-  { id: 'instagram', label: 'Instagram', prefix: 'instagram.com/', placeholder: 'anna.art' },
-  { id: 'vk', label: 'VK', prefix: 'vk.com/', placeholder: 'anna_art' },
-  { id: 'behance', label: 'Behance', prefix: 'behance.net/', placeholder: 'anna-art' },
+  { id: 'telegram', label: 'Telegram', prefix: 't.me/', placeholder: 'demo_author' },
+  { id: 'instagram', label: 'Instagram', prefix: 'instagram.com/', placeholder: 'demo.author' },
+  { id: 'vk', label: 'VK', prefix: 'vk.com/', placeholder: 'demo_author' },
+  { id: 'behance', label: 'Behance', prefix: 'behance.net/', placeholder: 'demo-author' },
 ] as const
 
 export type SocialPlatform = typeof socialPlatforms[number]['id']

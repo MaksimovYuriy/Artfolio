@@ -8,17 +8,17 @@ import (
 
 func TestSocialLinksFromEntitiesBuildsPublicURLs(t *testing.T) {
 	links := SocialLinksFromEntities([]entity.SocialLink{
-		{Platform: entity.SocialPlatformTelegram, Handle: "anna_art"},
-		{Platform: entity.SocialPlatformBehance, Handle: "anna-art"},
+		{Platform: entity.SocialPlatformTelegram, Handle: "demo_author"},
+		{Platform: entity.SocialPlatformBehance, Handle: "demo-author"},
 	})
 
 	if len(links) != 2 {
 		t.Fatalf("links = %#v", links)
 	}
-	if links[0].Label != "Telegram" || links[0].URL != "https://t.me/anna_art" {
+	if links[0].Label != "Telegram" || links[0].URL != "https://t.me/demo_author" {
 		t.Fatalf("telegram link = %#v", links[0])
 	}
-	if links[1].Label != "Behance" || links[1].URL != "https://behance.net/anna-art" {
+	if links[1].Label != "Behance" || links[1].URL != "https://behance.net/demo-author" {
 		t.Fatalf("behance link = %#v", links[1])
 	}
 }

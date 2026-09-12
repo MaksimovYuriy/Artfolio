@@ -5,7 +5,7 @@ import { AppBar, Container, IconButton, Link, Stack, Toolbar, Typography } from 
 
 const navigation = [
   { label: 'Работы', href: '#works' },
-  { label: 'О художнице', href: '#about' },
+  { label: 'Об авторе', href: '#about' },
   { label: 'Контакты', href: '#contacts' },
 ]
 

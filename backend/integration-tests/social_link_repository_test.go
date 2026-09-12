@@ -20,8 +20,8 @@ func TestSocialLinkRepositoryReplace(t *testing.T) {
 	repository := sociallinkrepo.NewRepo(database)
 
 	first := []entity.SocialLink{
-		{Platform: entity.SocialPlatformTelegram, Handle: "anna_art"},
-		{Platform: entity.SocialPlatformInstagram, Handle: "anna.art"},
+		{Platform: entity.SocialPlatformTelegram, Handle: "demo_author"},
+		{Platform: entity.SocialPlatformInstagram, Handle: "demo.author"},
 	}
 	if err := repository.Replace(ctx, profileID, first); err != nil {
 		t.Fatalf("Replace() initial error = %v", err)
@@ -34,7 +34,7 @@ func TestSocialLinkRepositoryReplace(t *testing.T) {
 		t.Fatalf("List() = %#v", links)
 	}
 
-	second := []entity.SocialLink{{Platform: entity.SocialPlatformVK, Handle: "anna_art"}}
+	second := []entity.SocialLink{{Platform: entity.SocialPlatformVK, Handle: "demo_author"}}
 	if err := repository.Replace(ctx, profileID, second); err != nil {
 		t.Fatalf("Replace() second error = %v", err)
 	}
@@ -62,7 +62,7 @@ func TestSocialLinkRepositoryReplace(t *testing.T) {
 func createArtistProfile(t *testing.T, ctx context.Context, database *sql.DB) int64 {
 	t.Helper()
 	var id int64
-	if err := database.QueryRowContext(ctx, "INSERT INTO artist_profiles (name) VALUES ('Анна') RETURNING id").Scan(&id); err != nil {
+	if err := database.QueryRowContext(ctx, "INSERT INTO artist_profiles (name) VALUES ('Тестовый автор') RETURNING id").Scan(&id); err != nil {
 		t.Fatalf("create artist profile: %v", err)
 	}
 	return id
